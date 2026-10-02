@@ -1,0 +1,1091 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
+import * as Haptics from 'expo-haptics';
+import React, { useEffect, useMemo, useState, type ComponentProps } from 'react';
+import {
+  ActivityIndicator,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useColors } from '@/hooks/useColors';
+
+type ScreenKey =
+  | 'home'
+  | 'attendance'
+  | 'notices'
+  | 'registration'
+  | 'results'
+  | 'information'
+  | 'fees'
+  | 'schedule'
+  | 'password';
+
+type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
+
+type Course = {
+  id: string;
+  code: string;
+  title: string;
+  faculty: string;
+  present: number;
+  total: number;
+};
+
+const STORAGE_KEY = 'student-diary-attendance-v1';
+const ATTENDANCE_TARGET = 60;
+
+const initialCourses: Course[] = [
+  { id: 'networks', code: 'BTE26138', title: 'Computer Networks', faculty: 'M. Velayapelli', present: 19, total: 25 },
+  { id: 'web-programming', code: 'BTE25464', title: 'Web Programming', faculty: 'Kanak Lata', present: 21, total: 26 },
+  { id: 'graph-theory', code: 'BTE26148', title: 'Professional Elective-I · Graph Theory', faculty: 'Dilip Kumar', present: 18, total: 25 },
+  { id: 'networks-lab', code: 'BTE26151', title: 'Computer Networks Laboratory', faculty: 'Megha Srivastava', present: 14, total: 17 },
+  { id: 'knowledge', code: 'BTE25122', title: 'Essence of Indian Knowledge Tradition', faculty: 'Monika Singh', present: 16, total: 21 },
+  { id: 'signals', code: 'BTE25112', title: 'Signals and Systems', faculty: 'Prem Nath Suman', present: 24, total: 30 },
+  { id: 'signals-lab', code: 'BTE25466', title: 'Signal & System Laboratory', faculty: 'R. K. Sharma', present: 15, total: 18 },
+  { id: 'software-engineering', code: 'BTE26121', title: 'Software Engineering', faculty: 'Anjali Kumari', present: 20, total: 25 },
+];
+
+const menuItems: Array<{ key: ScreenKey; label: string; icon: IconName }> = [
+  { key: 'home', label: 'Home', icon: 'home-outline' },
+  { key: 'attendance', label: 'Attendance', icon: 'clipboard-check-outline' },
+  { key: 'notices', label: 'Notice', icon: 'calendar-text-outline' },
+  { key: 'registration', label: 'Exam registration', icon: 'file-document-check-outline' },
+  { key: 'results', label: 'Result', icon: 'text-box-check-outline' },
+  { key: 'information', label: 'My information', icon: 'account-outline' },
+  { key: 'fees', label: 'Fees paid', icon: 'receipt-text-outline' },
+  { key: 'schedule', label: 'Class schedule', icon: 'calendar-month-outline' },
+  { key: 'password', label: 'Change password', icon: 'lock-reset' },
+];
+
+const notices = [
+  { date: 'OCT 06', tag: 'ACADEMIC', title: 'Mid-semester examination timetable', body: 'The draft timetable for semester V is available. Review your subjects and check the notice board for room updates.' },
+  { date: 'OCT 03', tag: 'CAMPUS', title: 'Library hours this week', body: 'The central library will remain open until 8:00 PM from Monday to Friday.' },
+  { date: 'SEP 29', tag: 'ACADEMIC', title: 'Project review submissions', body: 'Please submit your project review documents to your faculty mentor before the next scheduled review.' },
+];
+
+const scheduleByDay: Record<string, Array<{ time: string; code: string; title: string; room: string; faculty: string }>> = {
+  Mon: [
+    { time: '09:00 AM', code: 'BTE26138', title: 'Computer Networks', room: 'Block B · 204', faculty: 'M. Velayapelli' },
+    { time: '11:00 AM', code: 'BTE25464', title: 'Web Programming', room: 'Lab 03', faculty: 'Kanak Lata' },
+    { time: '02:00 PM', code: 'BTE25112', title: 'Signals and Systems', room: 'Block A · 118', faculty: 'Prem Nath Suman' },
+  ],
+  Tue: [
+    { time: '09:00 AM', code: 'BTE25122', title: 'Essence of Indian Knowledge', room: 'Block A · 102', faculty: 'Monika Singh' },
+    { time: '12:00 PM', code: 'BTE26151', title: 'Computer Networks Laboratory', room: 'Network Lab', faculty: 'Megha Srivastava' },
+  ],
+  Wed: [
+    { time: '10:00 AM', code: 'BTE26148', title: 'Graph Theory', room: 'Block B · 204', faculty: 'Dilip Kumar' },
+    { time: '01:00 PM', code: 'BTE26121', title: 'Software Engineering', room: 'Block A · 118', faculty: 'Anjali Kumari' },
+  ],
+  Thu: [
+    { time: '09:00 AM', code: 'BTE25466', title: 'Signal & System Laboratory', room: 'Electronics Lab', faculty: 'R. K. Sharma' },
+    { time: '11:00 AM', code: 'BTE26138', title: 'Computer Networks', room: 'Block B · 204', faculty: 'M. Velayapelli' },
+  ],
+  Fri: [
+    { time: '10:00 AM', code: 'BTE25464', title: 'Web Programming', room: 'Lab 03', faculty: 'Kanak Lata' },
+    { time: '12:00 PM', code: 'BTE26121', title: 'Software Engineering', room: 'Block A · 118', faculty: 'Anjali Kumari' },
+  ],
+};
+
+const results = [
+  { subject: 'Data Structures & Algorithms', code: 'BTE24106', grade: 'A', points: '8.0' },
+  { subject: 'Database Management Systems', code: 'BTE24114', grade: 'A+', points: '9.0' },
+  { subject: 'Object Oriented Programming', code: 'BTE24122', grade: 'A', points: '8.0' },
+  { subject: 'Discrete Mathematics', code: 'BTE24102', grade: 'B+', points: '7.0' },
+];
+
+function getPercentage(course: Course) {
+  return course.total === 0 ? 0 : Math.round((course.present / course.total) * 100);
+}
+
+function getTotals(courses: Course[]) {
+  return courses.reduce(
+    (totals, course) => ({
+      present: totals.present + course.present,
+      total: totals.total + course.total,
+    }),
+    { present: 0, total: 0 },
+  );
+}
+
+function ProgressRing({ percentage, size = 76, colors }: { percentage: number; size?: number; colors: ReturnType<typeof useColors> }) {
+  const stroke = 7;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference * (1 - Math.min(percentage, 100) / 100);
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+        <Circle cx={size / 2} cy={size / 2} r={radius} stroke={colors.border} strokeWidth={stroke} fill="none" />
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={percentage >= ATTENDANCE_TARGET ? colors.success : colors.destructive}
+          strokeWidth={stroke}
+          strokeDasharray={`${circumference} ${circumference}`}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          fill="none"
+        />
+      </Svg>
+      <View style={styles.ringLabel}>
+        <Text style={[styles.ringNumber, { color: colors.foreground }]}>{percentage}</Text>
+        <Text style={[styles.ringPercent, { color: colors.mutedForeground }]}>%</Text>
+      </View>
+    </View>
+  );
+}
+
+function SectionTitle({ title, action, onAction, colors }: { title: string; action?: string; onAction?: () => void; colors: ReturnType<typeof useColors> }) {
+  return (
+    <View style={styles.sectionTitleRow}>
+      <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{title}</Text>
+      {action && onAction ? (
+        <Pressable onPress={onAction} accessibilityRole="button" style={({ pressed }) => [{ opacity: pressed ? 0.65 : 1 }, styles.inlineAction]}>
+          <Text style={[styles.inlineActionText, { color: colors.primary }]}>{action}</Text>
+          <MaterialCommunityIcons name="arrow-right" size={16} color={colors.primary} />
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+function InfoRow({ label, value, colors }: { label: string; value: string; colors: ReturnType<typeof useColors> }) {
+  return (
+    <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+      <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>{label}</Text>
+      <Text style={[styles.infoValue, { color: colors.foreground }]}>{value}</Text>
+    </View>
+  );
+}
+
+export default function StudentDiaryScreen() {
+  const colors = useColors();
+  const { width } = useWindowDimensions();
+  const isWide = width >= 820;
+  const isTablet = width >= 620;
+
+  const [screen, setScreen] = useState<ScreenKey>('home');
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [courses, setCourses] = useState<Course[]>(initialCourses);
+  const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
+  const [activeDay, setActiveDay] = useState('Mon');
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    AsyncStorage.getItem(STORAGE_KEY)
+      .then((stored) => {
+        if (!active) return;
+        if (stored) {
+          const parsed: unknown = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.every((course) =>
+            course && typeof course.id === 'string' && Number.isFinite(course.present) &&
+            Number.isFinite(course.total) && course.present >= 0 && course.total >= course.present
+          )) {
+            setCourses(parsed as Course[]);
+          }
+        }
+      })
+      .catch(() => {
+        if (active) setCourses(initialCourses);
+      })
+      .finally(() => {
+        if (active) setReady(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (ready) {
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(courses)).catch(() => undefined);
+    }
+  }, [courses, ready]);
+
+  const totals = useMemo(() => getTotals(courses), [courses]);
+  const overallPercentage = totals.total ? Math.round((totals.present / totals.total) * 100) : 0;
+  const atTarget = courses.filter((course) => getPercentage(course) >= ATTENDANCE_TARGET).length;
+  const pageTitle = menuItems.find((item) => item.key === screen)?.label ?? 'Student Diary';
+
+  const navigate = (key: ScreenKey) => {
+    setScreen(key);
+    setDrawerOpen(false);
+    setExpandedCourse(null);
+  };
+
+  const recordClass = (courseId: string, present: boolean) => {
+    void Haptics.selectionAsync();
+    setCourses((current) =>
+      current.map((course) =>
+        course.id === courseId
+          ? { ...course, total: course.total + 1, present: course.present + (present ? 1 : 0) }
+          : course,
+      ),
+    );
+    setExpandedCourse(null);
+  };
+
+  if (!ready) {
+    return (
+      <SafeAreaView style={[styles.loadingScreen, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
+        <StatusBar style="light" />
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>Opening your diary…</Text>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
+      <StatusBar style="light" />
+      <View
+        style={[
+          styles.appShell,
+          { maxWidth: isWide ? 1180 : 760, paddingTop: Platform.OS === 'web' ? 67 : 0, paddingBottom: Platform.OS === 'web' ? 34 : 0 },
+        ]}
+      >
+        <View style={[styles.header, { backgroundColor: colors.primary }]}>
+          <Pressable
+            onPress={() => setDrawerOpen(true)}
+            accessibilityLabel="Open navigation menu"
+            accessibilityRole="button"
+            testID="open-menu"
+            style={({ pressed }) => [styles.headerIconButton, { opacity: pressed ? 0.7 : 1 }]}
+          >
+            <MaterialCommunityIcons name="menu" size={25} color={colors.primaryForeground} />
+          </Pressable>
+          <View style={styles.headerTitleWrap}>
+            <Text numberOfLines={1} style={[styles.headerTitle, { color: colors.primaryForeground }]}>{screen === 'home' ? 'Student Diary' : pageTitle}</Text>
+            <Text numberOfLines={1} style={styles.headerSubtitle}>ARKA JAIN University · Jharkhand</Text>
+          </View>
+          <Pressable onPress={() => navigate('information')} accessibilityLabel="Open student profile" accessibilityRole="button" style={styles.headerAvatar}>
+            <Text style={[styles.headerAvatarText, { color: colors.primary }]}>{'PR'}</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.body}>
+          {isWide ? (
+            <View style={[styles.desktopSidebar, { backgroundColor: colors.card, borderRightColor: colors.border }]}>
+              <View style={styles.sidebarIdentity}>
+                <View style={[styles.avatarLarge, { backgroundColor: colors.secondary }]}>
+                  <Text style={[styles.avatarInitials, { color: colors.primary }]}>PR</Text>
+                </View>
+                <Text style={[styles.sidebarName, { color: colors.foreground }]}>Prince Raj</Text>
+                <Text style={[styles.sidebarId, { color: colors.mutedForeground }]}>AJU/241355</Text>
+              </View>
+              {menuItems.map((item) => (
+                <NavItem key={item.key} item={item} selected={screen === item.key} onPress={() => navigate(item.key)} colors={colors} compact />
+              ))}
+            </View>
+          ) : null}
+
+          <ScrollView
+            style={styles.scrollArea}
+            contentContainerStyle={[styles.pageContent, { maxWidth: isWide ? 900 : 740, paddingHorizontal: isTablet ? 28 : 18 }]}
+            showsVerticalScrollIndicator={false}
+          >
+            {screen === 'home' ? (
+              <HomeScreen
+                colors={colors}
+                courses={courses}
+                totals={totals}
+                overallPercentage={overallPercentage}
+                atTarget={atTarget}
+                isTablet={isTablet}
+                onNavigate={navigate}
+              />
+            ) : null}
+            {screen === 'attendance' ? (
+              <AttendanceScreen
+                colors={colors}
+                courses={courses}
+                totals={totals}
+                overallPercentage={overallPercentage}
+                atTarget={atTarget}
+                expandedCourse={expandedCourse}
+                setExpandedCourse={setExpandedCourse}
+                recordClass={recordClass}
+                isTablet={isTablet}
+              />
+            ) : null}
+            {screen === 'notices' ? <NoticesScreen colors={colors} /> : null}
+            {screen === 'registration' ? <RegistrationScreen colors={colors} /> : null}
+            {screen === 'results' ? <ResultsScreen colors={colors} /> : null}
+            {screen === 'information' ? <InformationScreen colors={colors} /> : null}
+            {screen === 'fees' ? <FeesScreen colors={colors} /> : null}
+            {screen === 'schedule' ? <ScheduleScreen colors={colors} activeDay={activeDay} setActiveDay={setActiveDay} /> : null}
+            {screen === 'password' ? <PasswordScreen colors={colors} /> : null}
+            <Text style={[styles.disclaimer, { color: colors.mutedForeground }]}>Sample diary · not connected to university systems</Text>
+          </ScrollView>
+        </View>
+      </View>
+
+      {!isWide ? (
+        <Modal visible={drawerOpen} animationType="fade" transparent onRequestClose={() => setDrawerOpen(false)}>
+          <View style={styles.drawerOverlay}>
+            <Pressable style={styles.drawerScrim} onPress={() => setDrawerOpen(false)} accessibilityLabel="Close menu" />
+            <View style={[styles.drawer, { backgroundColor: colors.card, width: Math.min(width * 0.84, 350) }]}>
+              <View style={[styles.drawerProfile, { backgroundColor: colors.primary }]}>
+                <View style={styles.drawerTopLine}>
+                  <View style={[styles.avatarLarge, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
+                    <Text style={[styles.avatarInitials, { color: colors.primaryForeground }]}>PR</Text>
+                  </View>
+                  <Pressable onPress={() => setDrawerOpen(false)} accessibilityLabel="Close navigation menu" style={styles.closeDrawerButton}>
+                    <MaterialCommunityIcons name="close" size={23} color={colors.primaryForeground} />
+                  </Pressable>
+                </View>
+                <Text style={[styles.drawerName, { color: colors.primaryForeground }]}>Prince Raj</Text>
+                <Text style={styles.drawerId}>AJU/241355 · Semester V</Text>
+              </View>
+              <ScrollView contentContainerStyle={styles.drawerList}>
+                {menuItems.map((item) => (
+                  <NavItem key={item.key} item={item} selected={screen === item.key} onPress={() => navigate(item.key)} colors={colors} />
+                ))}
+              </ScrollView>
+              <View style={[styles.drawerFooter, { borderTopColor: colors.border }]}>
+                <MaterialCommunityIcons name="shield-check-outline" size={17} color={colors.mutedForeground} />
+                <Text style={[styles.drawerFooterText, { color: colors.mutedForeground }]}>Attendance data stays on this device</Text>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      ) : null}
+    </SafeAreaView>
+  );
+}
+
+function NavItem({
+  item,
+  selected,
+  onPress,
+  colors,
+  compact = false,
+}: {
+  item: (typeof menuItems)[number];
+  selected: boolean;
+  onPress: () => void;
+  colors: ReturnType<typeof useColors>;
+  compact?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      testID={`nav-${item.key}`}
+      style={({ pressed }) => [
+        styles.navItem,
+        compact && styles.navItemCompact,
+        { backgroundColor: selected ? colors.secondary : 'transparent', opacity: pressed ? 0.72 : 1 },
+      ]}
+    >
+      <MaterialCommunityIcons name={item.icon} size={21} color={selected ? colors.primary : colors.mutedForeground} />
+      <Text style={[styles.navLabel, { color: selected ? colors.primary : colors.foreground, fontWeight: selected ? '700' : '500' }]}>{item.label}</Text>
+      {selected ? <View style={[styles.navSelectedMark, { backgroundColor: colors.accent }]} /> : null}
+    </Pressable>
+  );
+}
+
+function HomeScreen({
+  colors,
+  courses,
+  totals,
+  overallPercentage,
+  atTarget,
+  isTablet,
+  onNavigate,
+}: {
+  colors: ReturnType<typeof useColors>;
+  courses: Course[];
+  totals: { present: number; total: number };
+  overallPercentage: number;
+  atTarget: number;
+  isTablet: boolean;
+  onNavigate: (key: ScreenKey) => void;
+}) {
+  return (
+    <View>
+      <View style={styles.welcomeRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.eyebrow, { color: colors.mutedForeground }]}>SEMESTER V · 2026</Text>
+          <Text style={[styles.welcomeTitle, { color: colors.foreground }]}>Good morning, Prince</Text>
+          <Text style={[styles.welcomeSubtext, { color: colors.mutedForeground }]}>Here’s your college snapshot.</Text>
+        </View>
+        <View style={[styles.homeAvatar, { backgroundColor: colors.secondary }]}>
+          <Text style={[styles.homeAvatarText, { color: colors.primary }]}>PR</Text>
+        </View>
+      </View>
+
+      <Pressable
+        onPress={() => onNavigate('attendance')}
+        accessibilityRole="button"
+        testID="home-attendance-card"
+        style={({ pressed }) => [styles.attendanceHero, { backgroundColor: colors.primary, opacity: pressed ? 0.94 : 1 }]}
+      >
+        <View style={styles.heroTopLine}>
+          <View>
+            <Text style={styles.heroKicker}>OVERALL ATTENDANCE</Text>
+            <Text style={styles.heroValue}>{overallPercentage}<Text style={styles.heroPercent}>%</Text></Text>
+          </View>
+          <ProgressRing percentage={overallPercentage} size={82} colors={{ ...colors, border: 'rgba(255,255,255,0.22)', success: colors.accent, destructive: colors.destructive, foreground: colors.primaryForeground, mutedForeground: colors.primaryForeground }} />
+        </View>
+        <View style={styles.heroDivider} />
+        <View style={styles.heroBottomLine}>
+          <View style={styles.heroMetric}>
+            <Text style={styles.heroMetricValue}>{totals.present}<Text style={styles.heroMetricSlash}> / {totals.total}</Text></Text>
+            <Text style={styles.heroMetricLabel}>classes attended</Text>
+          </View>
+          <View style={[styles.targetPill, { backgroundColor: 'rgba(255,255,255,0.13)' }]}>
+            <MaterialCommunityIcons name="target" size={16} color={colors.accent} />
+            <Text style={styles.targetPillText}>{atTarget}/{courses.length} at 60%</Text>
+          </View>
+          <MaterialCommunityIcons name="arrow-right" size={19} color={colors.primaryForeground} />
+        </View>
+      </Pressable>
+
+      <View style={styles.sectionSpacing}>
+        <SectionTitle title="Your courses" action="View all" onAction={() => onNavigate('attendance')} colors={colors} />
+        <View style={[styles.coursePreviewGrid, isTablet && styles.coursePreviewGridWide]}>
+          {courses.slice(0, isTablet ? 4 : 3).map((course) => (
+            <Pressable
+              key={course.id}
+              onPress={() => onNavigate('attendance')}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.coursePreview, { width: isTablet ? '48.5%' : '100%', backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.78 : 1 }]}
+            >
+              <ProgressRing percentage={getPercentage(course)} size={55} colors={colors} />
+              <View style={{ flex: 1 }}>
+                <Text numberOfLines={1} style={[styles.coursePreviewTitle, { color: colors.foreground }]}>{course.title}</Text>
+                <Text style={[styles.coursePreviewCode, { color: colors.mutedForeground }]}>{course.code}</Text>
+                <Text style={[styles.coursePreviewMeta, { color: colors.success }]}>{course.present} of {course.total} classes</Text>
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.sectionSpacing}>
+        <SectionTitle title="Quick access" colors={colors} />
+        <View style={styles.quickAccessGrid}>
+          {[
+            { key: 'schedule' as const, label: 'Class schedule', icon: 'calendar-month-outline' as const },
+            { key: 'notices' as const, label: 'Latest notices', icon: 'bullhorn-outline' as const },
+            { key: 'results' as const, label: 'My results', icon: 'text-box-check-outline' as const },
+          ].map((item) => (
+            <Pressable
+              key={item.key}
+              onPress={() => onNavigate(item.key)}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.quickAccessItem, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.75 : 1 }]}
+            >
+              <View style={[styles.quickIcon, { backgroundColor: colors.secondary }]}>
+                <MaterialCommunityIcons name={item.icon} size={20} color={colors.primary} />
+              </View>
+              <Text style={[styles.quickLabel, { color: colors.foreground }]}>{item.label}</Text>
+              <MaterialCommunityIcons name="arrow-up-right" size={17} color={colors.mutedForeground} />
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      <View style={[styles.noticeTeaser, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.noticeIcon, { backgroundColor: colors.accentSoft }]}>
+          <MaterialCommunityIcons name="bell-outline" size={20} color={colors.accentForeground} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.noticeTeaserLabel, { color: colors.mutedForeground }]}>LATEST NOTICE</Text>
+          <Text style={[styles.noticeTeaserTitle, { color: colors.foreground }]}>{notices[0].title}</Text>
+          <Pressable onPress={() => onNavigate('notices')} accessibilityRole="button" style={styles.noticeLink}>
+            <Text style={[styles.inlineActionText, { color: colors.primary }]}>Read notice</Text>
+            <MaterialCommunityIcons name="arrow-right" size={15} color={colors.primary} />
+          </Pressable>
+        </View>
+        <Text style={[styles.noticeDate, { color: colors.mutedForeground }]}>{notices[0].date}</Text>
+      </View>
+    </View>
+  );
+}
+
+function AttendanceScreen({
+  colors,
+  courses,
+  totals,
+  overallPercentage,
+  atTarget,
+  expandedCourse,
+  setExpandedCourse,
+  recordClass,
+  isTablet,
+}: {
+  colors: ReturnType<typeof useColors>;
+  courses: Course[];
+  totals: { present: number; total: number };
+  overallPercentage: number;
+  atTarget: number;
+  expandedCourse: string | null;
+  setExpandedCourse: (id: string | null) => void;
+  recordClass: (courseId: string, present: boolean) => void;
+  isTablet: boolean;
+}) {
+  return (
+    <View>
+      <View style={styles.pageIntro}>
+        <Text style={[styles.pageHeading, { color: colors.foreground }]}>Attendance</Text>
+        <Text style={[styles.pageSubheading, { color: colors.mutedForeground }]}>Computer Science & Engineering · Semester V</Text>
+      </View>
+      <View style={[styles.attendanceSummary, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <ProgressRing percentage={overallPercentage} size={86} colors={colors} />
+        <View style={styles.summaryDetails}>
+          <Text style={[styles.summaryTitle, { color: colors.foreground }]}>Semester overview</Text>
+          <Text style={[styles.summaryText, { color: colors.mutedForeground }]}>{totals.present} present · {totals.total - totals.present} absent · {totals.total} total</Text>
+          <View style={styles.summaryProgressTrack}>
+            <View style={[styles.summaryProgressFill, { width: `${Math.min(overallPercentage, 100)}%`, backgroundColor: overallPercentage >= ATTENDANCE_TARGET ? colors.success : colors.destructive }]} />
+            <View style={[styles.targetTick, { left: `${ATTENDANCE_TARGET}%`, backgroundColor: colors.accent }]} />
+          </View>
+          <Text style={[styles.targetHint, { color: colors.mutedForeground }]}>{atTarget} of {courses.length} subjects at or above the {ATTENDANCE_TARGET}% target</Text>
+        </View>
+      </View>
+      <View style={styles.attendanceNote}>
+        <MaterialCommunityIcons name="information-outline" size={16} color={colors.primary} />
+        <Text style={[styles.attendanceNoteText, { color: colors.mutedForeground }]}>Percentages are calculated from present ÷ total. Expand a subject to record a class.</Text>
+      </View>
+      <View style={[styles.courseList, isTablet && styles.courseListWide]}>
+        {courses.map((course) => {
+          const percentage = getPercentage(course);
+          const expanded = expandedCourse === course.id;
+          const eligible = percentage >= ATTENDANCE_TARGET;
+          return (
+            <View key={course.id} style={[styles.courseCard, isTablet && styles.courseCardWide, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Pressable
+                onPress={() => setExpandedCourse(expanded ? null : course.id)}
+                accessibilityRole="button"
+                accessibilityState={{ expanded }}
+                testID={`course-${course.id}`}
+                style={styles.courseCardPress}
+              >
+                <View style={[styles.courseCardHeader, { backgroundColor: colors.primary }]}>
+                  <View style={styles.courseHeadingText}>
+                    <Text style={styles.courseCode}>{course.code}</Text>
+                    <Text numberOfLines={2} style={styles.courseTitle}>{course.title}</Text>
+                  </View>
+                  <MaterialCommunityIcons name={expanded ? 'chevron-up' : 'chevron-down'} size={20} color={colors.primaryForeground} />
+                </View>
+                <View style={styles.courseCardBody}>
+                  <ProgressRing percentage={percentage} size={82} colors={colors} />
+                  <View style={styles.courseStats}>
+                    <StatRow label="Total" value={String(course.total)} colors={colors} />
+                    <StatRow label="Present" value={String(course.present)} colors={colors} valueColor={colors.success} />
+                    <StatRow label="Absent" value={String(course.total - course.present)} colors={colors} valueColor={colors.mutedForeground} />
+                  </View>
+                  <View style={[styles.targetBadge, { backgroundColor: eligible ? colors.successSoft : colors.dangerSoft }]}>
+                    <MaterialCommunityIcons name={eligible ? 'check-circle-outline' : 'alert-circle-outline'} size={16} color={eligible ? colors.success : colors.destructive} />
+                    <Text style={[styles.targetBadgeText, { color: eligible ? colors.success : colors.destructive }]}>{eligible ? 'On track' : 'Below target'}</Text>
+                  </View>
+                </View>
+                <View style={[styles.facultyRow, { borderTopColor: colors.border }]}>
+                  <Text style={[styles.facultyLabel, { color: colors.mutedForeground }]}>Faculty</Text>
+                  <Text numberOfLines={1} style={[styles.facultyName, { color: colors.foreground }]}>{course.faculty}</Text>
+                  <MaterialCommunityIcons name="chevron-right" size={18} color={colors.mutedForeground} />
+                </View>
+              </Pressable>
+              {expanded ? (
+                <View style={[styles.recordActions, { borderTopColor: colors.border }]}>
+                  <Text style={[styles.recordPrompt, { color: colors.mutedForeground }]}>Record one class</Text>
+                  <View style={styles.recordButtons}>
+                    <Pressable
+                      onPress={() => recordClass(course.id, true)}
+                      accessibilityRole="button"
+                      testID={`record-present-${course.id}`}
+                      style={({ pressed }) => [styles.recordButton, { backgroundColor: colors.successSoft, opacity: pressed ? 0.7 : 1 }]}
+                    >
+                      <MaterialCommunityIcons name="check" size={17} color={colors.success} />
+                      <Text style={[styles.recordButtonText, { color: colors.success }]}>Present</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => recordClass(course.id, false)}
+                      accessibilityRole="button"
+                      testID={`record-absent-${course.id}`}
+                      style={({ pressed }) => [styles.recordButton, { backgroundColor: colors.dangerSoft, opacity: pressed ? 0.7 : 1 }]}
+                    >
+                      <MaterialCommunityIcons name="close" size={17} color={colors.destructive} />
+                      <Text style={[styles.recordButtonText, { color: colors.destructive }]}>Absent</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : null}
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+function StatRow({ label, value, colors, valueColor }: { label: string; value: string; colors: ReturnType<typeof useColors>; valueColor?: string }) {
+  return (
+    <View style={styles.statRow}>
+      <Text style={[styles.statLabel, { color: colors.foreground }]}>{label}</Text>
+      <Text style={[styles.statValue, { color: valueColor ?? colors.foreground }]}>{value}</Text>
+    </View>
+  );
+}
+
+function NoticesScreen({ colors }: { colors: ReturnType<typeof useColors> }) {
+  return (
+    <View>
+      <View style={styles.pageIntro}>
+        <Text style={[styles.pageHeading, { color: colors.foreground }]}>Notices</Text>
+        <Text style={[styles.pageSubheading, { color: colors.mutedForeground }]}>Updates for your campus and classes</Text>
+      </View>
+      <View style={styles.noticeList}>
+        {notices.map((notice) => (
+          <View key={notice.title} style={[styles.noticeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.noticeCardTop}>
+              <View style={[styles.noticeDateBox, { backgroundColor: colors.secondary }]}>
+                <Text style={[styles.noticeDateText, { color: colors.primary }]}>{notice.date.split(' ')[1]}</Text>
+                <Text style={[styles.noticeMonthText, { color: colors.mutedForeground }]}>{notice.date.split(' ')[0]}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.noticeTag, { color: colors.primary }]}>{notice.tag}</Text>
+                <Text style={[styles.noticeCardTitle, { color: colors.foreground }]}>{notice.title}</Text>
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={19} color={colors.mutedForeground} />
+            </View>
+            <Text style={[styles.noticeBody, { color: colors.mutedForeground }]}>{notice.body}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function RegistrationScreen({ colors }: { colors: ReturnType<typeof useColors> }) {
+  return (
+    <View>
+      <View style={styles.pageIntro}>
+        <Text style={[styles.pageHeading, { color: colors.foreground }]}>Exam registration</Text>
+        <Text style={[styles.pageSubheading, { color: colors.mutedForeground }]}>Semester V · Academic year 2026</Text>
+      </View>
+      <View style={[styles.statusHero, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.statusIcon, { backgroundColor: colors.successSoft }]}>
+          <MaterialCommunityIcons name="check-circle-outline" size={27} color={colors.success} />
+        </View>
+        <Text style={[styles.statusLabel, { color: colors.mutedForeground }]}>CURRENT STATUS</Text>
+        <Text style={[styles.statusHeadline, { color: colors.foreground }]}>Registration submitted</Text>
+        <Text style={[styles.statusDescription, { color: colors.mutedForeground }]}>Your semester examination form is marked as submitted in this sample diary.</Text>
+        <View style={[styles.statusMetaRow, { borderTopColor: colors.border }]}>
+          <Text style={[styles.statusMetaLabel, { color: colors.mutedForeground }]}>Submitted on</Text>
+          <Text style={[styles.statusMetaValue, { color: colors.foreground }]}>18 Sep 2026</Text>
+        </View>
+        <View style={styles.statusMetaRow}>
+          <Text style={[styles.statusMetaLabel, { color: colors.mutedForeground }]}>Subjects selected</Text>
+          <Text style={[styles.statusMetaValue, { color: colors.foreground }]}>8 subjects</Text>
+        </View>
+      </View>
+      <DemoDataCallout colors={colors} text="This status is sample information only. Confirm your registration with the official student portal." />
+    </View>
+  );
+}
+
+function ResultsScreen({ colors }: { colors: ReturnType<typeof useColors> }) {
+  return (
+    <View>
+      <View style={styles.pageIntro}>
+        <Text style={[styles.pageHeading, { color: colors.foreground }]}>Results</Text>
+        <Text style={[styles.pageSubheading, { color: colors.mutedForeground }]}>Your academic record at a glance</Text>
+      </View>
+      <View style={[styles.gpaCard, { backgroundColor: colors.primary }]}>
+        <View>
+          <Text style={styles.gpaKicker}>PREVIOUS SEMESTER</Text>
+          <Text style={styles.gpaValue}>8.1<Text style={styles.gpaScale}> / 10</Text></Text>
+          <Text style={styles.gpaCaption}>Semester IV · SGPA</Text>
+        </View>
+        <View style={[styles.gpaIcon, { backgroundColor: 'rgba(255,255,255,0.14)' }]}>
+          <MaterialCommunityIcons name="school-outline" size={29} color={colors.accent} />
+        </View>
+      </View>
+      <View style={styles.resultSection}>
+        <SectionTitle title="Semester IV grades" colors={colors} />
+        {results.map((result, index) => (
+          <View key={result.code} style={[styles.resultRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={[styles.resultIndex, { backgroundColor: colors.secondary }]}>
+              <Text style={[styles.resultIndexText, { color: colors.primary }]}>{String(index + 1).padStart(2, '0')}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.resultSubject, { color: colors.foreground }]}>{result.subject}</Text>
+              <Text style={[styles.resultCode, { color: colors.mutedForeground }]}>{result.code} · {result.points} grade points</Text>
+            </View>
+            <View style={[styles.gradeBadge, { backgroundColor: colors.successSoft }]}>
+              <Text style={[styles.gradeText, { color: colors.success }]}>{result.grade}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+      <DemoDataCallout colors={colors} text="Grades shown here are sample entries, not official university results." />
+    </View>
+  );
+}
+
+function InformationScreen({ colors }: { colors: ReturnType<typeof useColors> }) {
+  return (
+    <View>
+      <View style={styles.pageIntro}>
+        <Text style={[styles.pageHeading, { color: colors.foreground }]}>My information</Text>
+        <Text style={[styles.pageSubheading, { color: colors.mutedForeground }]}>Student profile and course details</Text>
+      </View>
+      <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.profileAvatar, { backgroundColor: colors.primary }]}>
+          <Text style={[styles.profileAvatarText, { color: colors.primaryForeground }]}>PR</Text>
+        </View>
+        <Text style={[styles.profileName, { color: colors.foreground }]}>Prince Raj</Text>
+        <Text style={[styles.profileProgram, { color: colors.mutedForeground }]}>Computer Science & Engineering</Text>
+        <View style={[styles.profilePill, { backgroundColor: colors.secondary }]}>
+          <Text style={[styles.profilePillText, { color: colors.primary }]}>Semester V</Text>
+        </View>
+      </View>
+      <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <InfoRow label="USN No." value="AJU/241355" colors={colors} />
+        <InfoRow label="College" value="ARKA JAIN University" colors={colors} />
+        <InfoRow label="Department" value="Computer Science & Engineering" colors={colors} />
+        <InfoRow label="Programme" value="B.Tech" colors={colors} />
+        <InfoRow label="Current semester" value="V" colors={colors} />
+        <InfoRow label="Academic year" value="2026–27" colors={colors} />
+      </View>
+      <DemoDataCallout colors={colors} text="Profile information is included as an editable prototype example." />
+    </View>
+  );
+}
+
+function FeesScreen({ colors }: { colors: ReturnType<typeof useColors> }) {
+  const feeRows = [
+    { label: 'Tuition fee · Semester V', date: '12 AUG 2026', amount: '₹ 54,000', status: 'Paid' },
+    { label: 'Library & student services', date: '12 AUG 2026', amount: '₹ 3,500', status: 'Paid' },
+    { label: 'Examination fee', date: '18 SEP 2026', amount: '₹ 2,200', status: 'Paid' },
+  ];
+  return (
+    <View>
+      <View style={styles.pageIntro}>
+        <Text style={[styles.pageHeading, { color: colors.foreground }]}>Fees paid</Text>
+        <Text style={[styles.pageSubheading, { color: colors.mutedForeground }]}>Payment history · Semester V</Text>
+      </View>
+      <View style={[styles.feesSummary, { backgroundColor: colors.primary }]}>
+        <Text style={styles.feesKicker}>TOTAL PAID · THIS SEMESTER</Text>
+        <Text style={styles.feesValue}>₹ 59,700</Text>
+        <View style={styles.feesSummaryBottom}>
+          <MaterialCommunityIcons name="check-circle-outline" size={16} color={colors.accent} />
+          <Text style={styles.feesSummaryText}>All listed payments complete</Text>
+        </View>
+      </View>
+      <View style={styles.feeList}>
+        {feeRows.map((row) => (
+          <View key={row.label} style={[styles.feeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={[styles.feeIcon, { backgroundColor: colors.secondary }]}>
+              <MaterialCommunityIcons name="receipt-text-outline" size={20} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.feeTitle, { color: colors.foreground }]}>{row.label}</Text>
+              <Text style={[styles.feeDate, { color: colors.mutedForeground }]}>{row.date} · {row.status.toUpperCase()}</Text>
+            </View>
+            <Text style={[styles.feeAmount, { color: colors.foreground }]}>{row.amount}</Text>
+          </View>
+        ))}
+      </View>
+      <DemoDataCallout colors={colors} text="Payment records are sample information. Check official receipts for confirmed balances." />
+    </View>
+  );
+}
+
+function ScheduleScreen({
+  colors,
+  activeDay,
+  setActiveDay,
+}: {
+  colors: ReturnType<typeof useColors>;
+  activeDay: string;
+  setActiveDay: (day: string) => void;
+}) {
+  return (
+    <View>
+      <View style={styles.pageIntro}>
+        <Text style={[styles.pageHeading, { color: colors.foreground }]}>Class schedule</Text>
+        <Text style={[styles.pageSubheading, { color: colors.mutedForeground }]}>Your weekly timetable · Semester V</Text>
+      </View>
+      <View style={styles.dayPicker}>
+        {Object.keys(scheduleByDay).map((day) => (
+          <Pressable
+            key={day}
+            onPress={() => setActiveDay(day)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: activeDay === day }}
+            style={({ pressed }) => [
+              styles.dayButton,
+              { backgroundColor: activeDay === day ? colors.primary : colors.card, borderColor: activeDay === day ? colors.primary : colors.border, opacity: pressed ? 0.75 : 1 },
+            ]}
+          >
+            <Text style={[styles.dayButtonText, { color: activeDay === day ? colors.primaryForeground : colors.mutedForeground }]}>{day}</Text>
+          </Pressable>
+        ))}
+      </View>
+      <View style={styles.timeline}>
+        {(scheduleByDay[activeDay] ?? []).map((item, index) => (
+          <View key={`${activeDay}-${item.code}`} style={styles.timelineEntry}>
+            <View style={styles.timeColumn}>
+              <Text style={[styles.timeText, { color: colors.mutedForeground }]}>{item.time}</Text>
+              <View style={[styles.timelineDot, { backgroundColor: colors.accent }]} />
+              {index < (scheduleByDay[activeDay]?.length ?? 0) - 1 ? <View style={[styles.timelineLine, { backgroundColor: colors.border }]} /> : null}
+            </View>
+            <View style={[styles.scheduleCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.scheduleCode, { color: colors.primary }]}>{item.code}</Text>
+              <Text style={[styles.scheduleTitle, { color: colors.foreground }]}>{item.title}</Text>
+              <View style={styles.scheduleMeta}>
+                <MaterialCommunityIcons name="map-marker-outline" size={15} color={colors.mutedForeground} />
+                <Text style={[styles.scheduleMetaText, { color: colors.mutedForeground }]}>{item.room}</Text>
+                <View style={[styles.metaDivider, { backgroundColor: colors.border }]} />
+                <Text numberOfLines={1} style={[styles.scheduleMetaText, { color: colors.mutedForeground, flex: 1 }]}>{item.faculty}</Text>
+              </View>
+            </View>
+          </View>
+        ))}
+      </View>
+      <DemoDataCallout colors={colors} text="Timetable entries are examples. Verify class times with your department." />
+    </View>
+  );
+}
+
+function PasswordScreen({ colors }: { colors: ReturnType<typeof useColors> }) {
+  return (
+    <View>
+      <View style={styles.pageIntro}>
+        <Text style={[styles.pageHeading, { color: colors.foreground }]}>Change password</Text>
+        <Text style={[styles.pageSubheading, { color: colors.mutedForeground }]}>Keep your student account secure</Text>
+      </View>
+      <View style={[styles.passwordInfo, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.passwordIcon, { backgroundColor: colors.secondary }]}>
+          <MaterialCommunityIcons name="lock-reset" size={25} color={colors.primary} />
+        </View>
+        <Text style={[styles.passwordTitle, { color: colors.foreground }]}>Use your official student portal</Text>
+        <Text style={[styles.passwordBody, { color: colors.mutedForeground }]}>This diary is a local prototype and does not manage university passwords. To change your password, use the official university account portal or contact the student help desk.</Text>
+        <View style={[styles.passwordNotice, { backgroundColor: colors.accentSoft }]}>
+          <MaterialCommunityIcons name="shield-lock-outline" size={17} color={colors.accentForeground} />
+          <Text style={[styles.passwordNoticeText, { color: colors.accentForeground }]}>Never enter your university password into an unverified app.</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function DemoDataCallout({ colors, text }: { colors: ReturnType<typeof useColors>; text: string }) {
+  return (
+    <View style={[styles.demoCallout, { backgroundColor: colors.secondary }]}>
+      <MaterialCommunityIcons name="information-outline" size={17} color={colors.primary} />
+      <Text style={[styles.demoCalloutText, { color: colors.mutedForeground }]}>{text}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: { flex: 1 },
+  appShell: { flex: 1, width: '100%', alignSelf: 'center', backgroundColor: 'transparent' },
+  loadingScreen: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  loadingText: { fontSize: 14, fontWeight: '500' },
+  header: { minHeight: 68, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, gap: 12 },
+  headerIconButton: { width: 38, height: 42, alignItems: 'flex-start', justifyContent: 'center' },
+  headerTitleWrap: { flex: 1, justifyContent: 'center' },
+  headerTitle: { fontSize: 20, fontWeight: '700', letterSpacing: 0.1 },
+  headerSubtitle: { color: 'rgba(255,255,255,0.68)', fontSize: 11, marginTop: 2, letterSpacing: 0.35 },
+  headerAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#f4f1e9', alignItems: 'center', justifyContent: 'center' },
+  headerAvatarText: { fontSize: 12, fontWeight: '800' },
+  body: { flex: 1, flexDirection: 'row' },
+  scrollArea: { flex: 1 },
+  pageContent: { width: '100%', alignSelf: 'center', paddingTop: 22, paddingBottom: 24 },
+  desktopSidebar: { width: 236, borderRightWidth: 1, paddingHorizontal: 14, paddingTop: 20 },
+  sidebarIdentity: { alignItems: 'center', paddingBottom: 20, marginBottom: 12 },
+  avatarLarge: { width: 68, height: 68, borderRadius: 34, alignItems: 'center', justifyContent: 'center' },
+  avatarInitials: { fontSize: 21, fontWeight: '700' },
+  sidebarName: { fontSize: 16, fontWeight: '700', marginTop: 11 },
+  sidebarId: { fontSize: 12, marginTop: 4 },
+  navItem: { minHeight: 48, paddingHorizontal: 14, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 4, position: 'relative' },
+  navItemCompact: { minHeight: 44, paddingHorizontal: 11, gap: 11 },
+  navLabel: { fontSize: 14, flex: 1 },
+  navSelectedMark: { position: 'absolute', right: 9, width: 5, height: 5, borderRadius: 3 },
+  welcomeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 14 },
+  eyebrow: { fontSize: 10, fontWeight: '700', letterSpacing: 1.2, marginBottom: 6 },
+  welcomeTitle: { fontSize: 24, fontWeight: '700', letterSpacing: -0.4 },
+  welcomeSubtext: { fontSize: 14, marginTop: 4 },
+  homeAvatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+  homeAvatarText: { fontSize: 18, fontWeight: '700' },
+  attendanceHero: { borderRadius: 20, padding: 20, overflow: 'hidden' },
+  heroTopLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  heroKicker: { color: 'rgba(255,255,255,0.70)', fontSize: 10, fontWeight: '700', letterSpacing: 1.15 },
+  heroValue: { color: '#ffffff', fontSize: 40, lineHeight: 47, fontWeight: '700', marginTop: 5 },
+  heroPercent: { fontSize: 21, fontWeight: '500' },
+  ringLabel: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center' },
+  ringNumber: { fontSize: 21, fontWeight: '700' },
+  ringPercent: { fontSize: 10, marginTop: 3, marginLeft: 1 },
+  heroDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.16)', marginTop: 17, marginBottom: 13 },
+  heroBottomLine: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  heroMetric: { flex: 1 },
+  heroMetricValue: { color: '#ffffff', fontWeight: '700', fontSize: 15 },
+  heroMetricSlash: { color: 'rgba(255,255,255,0.70)', fontWeight: '500', fontSize: 13 },
+  heroMetricLabel: { color: 'rgba(255,255,255,0.68)', fontSize: 11, marginTop: 3 },
+  targetPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 20 },
+  targetPillText: { color: '#ffffff', fontSize: 11, fontWeight: '600' },
+  sectionSpacing: { marginTop: 25 },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  sectionTitle: { fontSize: 17, fontWeight: '700', letterSpacing: -0.2 },
+  inlineAction: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  inlineActionText: { fontSize: 12, fontWeight: '700' },
+  coursePreviewGrid: { gap: 9 },
+  coursePreviewGridWide: { flexDirection: 'row', flexWrap: 'wrap' },
+  coursePreview: { borderWidth: 1, borderRadius: 15, padding: 13, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  coursePreviewTitle: { fontSize: 13, fontWeight: '700' },
+  coursePreviewCode: { fontSize: 11, marginTop: 3 },
+  coursePreviewMeta: { fontSize: 11, marginTop: 5, fontWeight: '600' },
+  quickAccessGrid: { gap: 9 },
+  quickAccessItem: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 62, borderWidth: 1, borderRadius: 14, paddingHorizontal: 12 },
+  quickIcon: { width: 37, height: 37, alignItems: 'center', justifyContent: 'center', borderRadius: 11 },
+  quickLabel: { flex: 1, fontSize: 13, fontWeight: '600' },
+  noticeTeaser: { borderWidth: 1, borderRadius: 16, padding: 14, marginTop: 20, flexDirection: 'row', gap: 11 },
+  noticeIcon: { width: 38, height: 38, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  noticeTeaserLabel: { fontSize: 9, fontWeight: '700', letterSpacing: 1, marginBottom: 5 },
+  noticeTeaserTitle: { fontSize: 13, fontWeight: '600', lineHeight: 19 },
+  noticeLink: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 9, alignSelf: 'flex-start' },
+  noticeDate: { fontSize: 9, fontWeight: '700', marginTop: 2 },
+  pageIntro: { marginBottom: 18 },
+  pageHeading: { fontSize: 25, fontWeight: '700', letterSpacing: -0.4 },
+  pageSubheading: { fontSize: 13, marginTop: 5, lineHeight: 19 },
+  attendanceSummary: { borderWidth: 1, borderRadius: 17, padding: 15, flexDirection: 'row', alignItems: 'center', gap: 15 },
+  summaryDetails: { flex: 1 },
+  summaryTitle: { fontSize: 14, fontWeight: '700' },
+  summaryText: { fontSize: 11, marginTop: 4 },
+  summaryProgressTrack: { height: 6, borderRadius: 4, backgroundColor: '#e7ecee', marginTop: 12, position: 'relative' },
+  summaryProgressFill: { height: 6, borderRadius: 4 },
+  targetTick: { position: 'absolute', top: -3, width: 2, height: 12, marginLeft: -1 },
+  targetHint: { fontSize: 10, marginTop: 6 },
+  attendanceNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 7, marginTop: 13, marginBottom: 14, paddingHorizontal: 2 },
+  attendanceNoteText: { fontSize: 11, lineHeight: 16, flex: 1 },
+  courseList: { gap: 13 },
+  courseListWide: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start' },
+  courseCard: { borderWidth: 1, borderRadius: 13, overflow: 'hidden', width: '100%' },
+  courseCardWide: { width: '48.7%' },
+  courseCardPress: {},
+  courseCardHeader: { minHeight: 47, paddingVertical: 9, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  courseHeadingText: { flex: 1 },
+  courseCode: { color: 'rgba(255,255,255,0.66)', fontSize: 9, fontWeight: '600', letterSpacing: 0.65 },
+  courseTitle: { color: '#ffffff', fontSize: 12, fontWeight: '600', marginTop: 2, lineHeight: 16 },
+  courseCardBody: { flexDirection: 'row', alignItems: 'center', padding: 13, gap: 12 },
+  courseStats: { flex: 1, gap: 7 },
+  statRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  statLabel: { fontSize: 12 },
+  statValue: { fontSize: 12, fontWeight: '600', minWidth: 24, textAlign: 'right' },
+  targetBadge: { position: 'absolute', right: 11, bottom: 7, flexDirection: 'row', alignItems: 'center', gap: 3, paddingVertical: 3, paddingHorizontal: 6, borderRadius: 9 },
+  targetBadgeText: { fontSize: 8, fontWeight: '700' },
+  facultyRow: { borderTopWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 7, minHeight: 38, paddingHorizontal: 11 },
+  facultyLabel: { fontSize: 10, fontWeight: '600' },
+  facultyName: { fontSize: 11, flex: 1 },
+  recordActions: { borderTopWidth: 1, padding: 12 },
+  recordPrompt: { fontSize: 11, marginBottom: 9 },
+  recordButtons: { flexDirection: 'row', gap: 8 },
+  recordButton: { flex: 1, borderRadius: 10, minHeight: 38, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 5 },
+  recordButtonText: { fontSize: 12, fontWeight: '700' },
+  noticeList: { gap: 11 },
+  noticeCard: { borderWidth: 1, borderRadius: 16, padding: 14 },
+  noticeCardTop: { flexDirection: 'row', alignItems: 'center', gap: 11 },
+  noticeDateBox: { width: 43, height: 47, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  noticeDateText: { fontSize: 15, fontWeight: '700' },
+  noticeMonthText: { fontSize: 8, fontWeight: '700', marginTop: 1 },
+  noticeTag: { fontSize: 9, fontWeight: '700', letterSpacing: 0.8, marginBottom: 4 },
+  noticeCardTitle: { fontSize: 13, lineHeight: 18, fontWeight: '700' },
+  noticeBody: { fontSize: 12, lineHeight: 18, marginTop: 12, marginLeft: 54 },
+  statusHero: { borderWidth: 1, borderRadius: 17, padding: 18 },
+  statusIcon: { width: 49, height: 49, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  statusLabel: { fontSize: 9, fontWeight: '700', letterSpacing: 1.1 },
+  statusHeadline: { fontSize: 20, fontWeight: '700', marginTop: 6 },
+  statusDescription: { fontSize: 12, lineHeight: 18, marginTop: 7, marginBottom: 17 },
+  statusMetaRow: { minHeight: 39, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1 },
+  statusMetaLabel: { fontSize: 11 },
+  statusMetaValue: { fontSize: 11, fontWeight: '600' },
+  gpaCard: { borderRadius: 18, padding: 19, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  gpaKicker: { color: 'rgba(255,255,255,0.68)', fontSize: 9, fontWeight: '700', letterSpacing: 1 },
+  gpaValue: { color: '#ffffff', fontSize: 36, fontWeight: '700', marginTop: 5 },
+  gpaScale: { color: 'rgba(255,255,255,0.68)', fontSize: 15, fontWeight: '500' },
+  gpaCaption: { color: 'rgba(255,255,255,0.72)', fontSize: 11, marginTop: 1 },
+  gpaIcon: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  resultSection: { marginTop: 22 },
+  resultRow: { borderWidth: 1, borderRadius: 13, padding: 10, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  resultIndex: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  resultIndexText: { fontSize: 10, fontWeight: '700' },
+  resultSubject: { fontSize: 12, fontWeight: '600', lineHeight: 17 },
+  resultCode: { fontSize: 9, marginTop: 3 },
+  gradeBadge: { minWidth: 36, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  gradeText: { fontSize: 12, fontWeight: '800' },
+  profileCard: { borderWidth: 1, borderRadius: 17, alignItems: 'center', padding: 20, marginBottom: 12 },
+  profileAvatar: { width: 86, height: 86, borderRadius: 43, alignItems: 'center', justifyContent: 'center' },
+  profileAvatarText: { fontSize: 27, fontWeight: '700' },
+  profileName: { fontSize: 20, fontWeight: '700', marginTop: 12 },
+  profileProgram: { fontSize: 12, marginTop: 5, textAlign: 'center' },
+  profilePill: { borderRadius: 14, paddingHorizontal: 11, paddingVertical: 6, marginTop: 12 },
+  profilePillText: { fontSize: 10, fontWeight: '700' },
+  infoCard: { borderWidth: 1, borderRadius: 15, paddingHorizontal: 14 },
+  infoRow: { minHeight: 48, borderBottomWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  infoLabel: { fontSize: 11 },
+  infoValue: { fontSize: 11, fontWeight: '600', textAlign: 'right', flex: 1 },
+  feesSummary: { borderRadius: 18, padding: 19, marginBottom: 14 },
+  feesKicker: { color: 'rgba(255,255,255,0.68)', fontSize: 9, fontWeight: '700', letterSpacing: 1 },
+  feesValue: { color: '#ffffff', fontSize: 30, fontWeight: '700', marginTop: 7 },
+  feesSummaryBottom: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
+  feesSummaryText: { color: 'rgba(255,255,255,0.78)', fontSize: 11 },
+  feeList: { gap: 9 },
+  feeCard: { borderWidth: 1, borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  feeIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  feeTitle: { fontSize: 11, fontWeight: '600', lineHeight: 16 },
+  feeDate: { fontSize: 8, fontWeight: '600', letterSpacing: 0.3, marginTop: 4 },
+  feeAmount: { fontSize: 11, fontWeight: '700' },
+  dayPicker: { flexDirection: 'row', gap: 8, marginBottom: 20 },
+  dayButton: { flex: 1, minHeight: 39, borderWidth: 1, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  dayButtonText: { fontSize: 11, fontWeight: '700' },
+  timeline: { gap: 2 },
+  timelineEntry: { flexDirection: 'row', minHeight: 103 },
+  timeColumn: { width: 78, alignItems: 'flex-start', position: 'relative' },
+  timeText: { fontSize: 9, fontWeight: '600', marginTop: 5 },
+  timelineDot: { position: 'absolute', top: 27, right: 12, width: 9, height: 9, borderRadius: 5, zIndex: 1 },
+  timelineLine: { position: 'absolute', top: 36, bottom: -2, right: 15, width: 2 },
+  scheduleCard: { flex: 1, borderWidth: 1, borderRadius: 13, padding: 12, marginBottom: 10 },
+  scheduleCode: { fontSize: 9, fontWeight: '700', letterSpacing: 0.3 },
+  scheduleTitle: { fontSize: 13, fontWeight: '700', marginTop: 5 },
+  scheduleMeta: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 8 },
+  scheduleMetaText: { fontSize: 9 },
+  metaDivider: { width: 1, height: 12, marginHorizontal: 2 },
+  passwordInfo: { borderWidth: 1, borderRadius: 17, padding: 18 },
+  passwordIcon: { width: 49, height: 49, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  passwordTitle: { fontSize: 17, fontWeight: '700', marginTop: 15 },
+  passwordBody: { fontSize: 12, lineHeight: 19, marginTop: 8 },
+  passwordNotice: { borderRadius: 12, padding: 11, flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16 },
+  passwordNoticeText: { flex: 1, fontSize: 10, lineHeight: 15, fontWeight: '600' },
+  demoCallout: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', padding: 11, borderRadius: 12, marginTop: 14 },
+  demoCalloutText: { flex: 1, fontSize: 10, lineHeight: 15 },
+  disclaimer: { textAlign: 'center', fontSize: 9, marginTop: 24, paddingBottom: 10 },
+  drawerOverlay: { flex: 1, flexDirection: 'row', backgroundColor: 'rgba(7,25,39,0.48)' },
+  drawerScrim: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 },
+  drawer: { height: '100%', maxWidth: '88%', elevation: 12 },
+  drawerProfile: { paddingHorizontal: 20, paddingTop: 26, paddingBottom: 19 },
+  drawerTopLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  closeDrawerButton: { width: 35, height: 35, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  drawerName: { fontSize: 16, fontWeight: '700', marginTop: 12 },
+  drawerId: { color: 'rgba(255,255,255,0.68)', fontSize: 11, marginTop: 4 },
+  drawerList: { padding: 12, paddingTop: 14 },
+  drawerFooter: { minHeight: 47, borderTopWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 17 },
+  drawerFooterText: { fontSize: 9, flex: 1 },
+});
