@@ -192,7 +192,7 @@ export default function StudentDiaryScreen() {
   const isWide = width >= 820;
   const isTablet = width >= 620;
 
-  const [screen, setScreen] = useState<ScreenKey>('home');
+  const [screen, setScreen] = useState<ScreenKey>('attendance');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [courses, setCourses] = useState<Course[]>(initialCourses);
   const [attendanceCourses, setAttendanceCourses] = useState<Course[]>(initialAttendanceCourses);
@@ -296,29 +296,29 @@ export default function StudentDiaryScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: screen === 'home' ? colors.primary : colors.background }]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: screen === 'home' || screen === 'registration' ? colors.primary : colors.background }]} edges={['top', 'bottom']}>
       <StatusBar style="light" />
       <View
         style={[
           styles.appShell,
-          { maxWidth: isWide ? 1180 : 760, paddingTop: Platform.OS === 'web' ? 67 : 0, paddingBottom: Platform.OS === 'web' ? 34 : 0, backgroundColor: screen === 'home' ? colors.primary : 'transparent' },
+          { maxWidth: isWide ? 1180 : 760, paddingTop: Platform.OS === 'web' ? 67 : 0, paddingBottom: Platform.OS === 'web' ? 34 : 0, backgroundColor: screen === 'home' || screen === 'registration' ? colors.primary : 'transparent' },
         ]}
       >
-        <View style={[styles.header, screen === 'home' && styles.homeHeader, { backgroundColor: colors.primary }]}>
+        <View style={[styles.header, screen === 'home' && styles.homeHeader, screen === 'registration' && styles.registrationHeader, { backgroundColor: colors.primary }]}>
           <Pressable
-            onPress={() => setDrawerOpen(true)}
-            accessibilityLabel="Open navigation menu"
+            onPress={() => screen === 'registration' ? navigate('home') : setDrawerOpen(true)}
+            accessibilityLabel={screen === 'registration' ? 'Back to home' : 'Open navigation menu'}
             accessibilityRole="button"
-            testID="open-menu"
+            testID={screen === 'registration' ? 'back-from-registration' : 'open-menu'}
             style={({ pressed }) => [styles.headerIconButton, { opacity: pressed ? 0.7 : 1 }]}
           >
-            <MaterialCommunityIcons name="menu" size={25} color={colors.primaryForeground} />
+            <MaterialCommunityIcons name={screen === 'registration' ? 'arrow-left' : 'menu'} size={25} color={colors.primaryForeground} />
           </Pressable>
           <View style={styles.headerTitleWrap}>
-            <Text numberOfLines={1} style={[styles.headerTitle, screen === 'home' && styles.homeHeaderTitle, { color: colors.primaryForeground }]}>{screen === 'home' ? 'Student Diary' : pageTitle}</Text>
-            {screen !== 'home' && screen !== 'attendance' ? <Text numberOfLines={1} style={styles.headerSubtitle}>ARKA JAIN University · Jharkhand</Text> : null}
+            <Text numberOfLines={1} style={[styles.headerTitle, screen === 'home' && styles.homeHeaderTitle, screen === 'registration' && styles.registrationHeaderTitle, { color: colors.primaryForeground }]}>{screen === 'home' ? 'Student Diary' : screen === 'registration' ? 'Show Exam Register Status' : pageTitle}</Text>
+            {screen !== 'home' && screen !== 'attendance' && screen !== 'registration' ? <Text numberOfLines={1} style={styles.headerSubtitle}>ARKA JAIN University · Jharkhand</Text> : null}
           </View>
-          {screen !== 'home' && screen !== 'attendance' ? (
+          {screen !== 'home' && screen !== 'attendance' && screen !== 'registration' ? (
             <Pressable onPress={() => navigate('information')} accessibilityLabel="Open student profile" accessibilityRole="button" style={styles.headerAvatar}>
               <Text style={[styles.headerAvatarText, { color: colors.primary }]}>PR</Text>
             </Pressable>
@@ -342,11 +342,16 @@ export default function StudentDiaryScreen() {
           ) : null}
 
           <ScrollView
-            style={[styles.scrollArea, screen === 'home' && { backgroundColor: colors.card }]}
+            style={[
+              styles.scrollArea,
+              screen === 'home' && { backgroundColor: colors.card },
+              screen === 'registration' && { backgroundColor: colors.background },
+            ]}
             contentContainerStyle={[
               styles.pageContent,
               { maxWidth: screen === 'home' ? 460 : isWide ? 900 : 740, paddingHorizontal: screen === 'home' ? 23 : isTablet ? 28 : 18 },
               screen === 'home' && styles.homePageContent,
+              screen === 'registration' && styles.registrationPageContent,
             ]}
             showsVerticalScrollIndicator={false}
           >
@@ -364,7 +369,7 @@ export default function StudentDiaryScreen() {
               />
             ) : null}
             {screen === 'notices' ? <NoticesScreen colors={colors} /> : null}
-            {screen === 'registration' ? <RegistrationScreen colors={colors} /> : null}
+            {screen === 'registration' ? <RegistrationScreen colors={colors} isTablet={isTablet} /> : null}
             {screen === 'results' ? <ResultsScreen colors={colors} /> : null}
             {screen === 'information' ? <InformationScreen colors={colors} /> : null}
             {screen === 'fees' ? <FeesScreen colors={colors} /> : null}
@@ -405,14 +410,14 @@ export default function StudentDiaryScreen() {
           </View>
         </Modal>
       ) : null}
-      {screen === 'home' ? (
+      {screen === 'home' || screen === 'registration' ? (
         <View
           style={[
             styles.homeBottomInset,
             {
               height: Platform.OS === 'web' ? 34 : insets.bottom,
               bottom: Platform.OS === 'web' ? 0 : -insets.bottom,
-              backgroundColor: colors.card,
+              backgroundColor: screen === 'home' ? colors.card : colors.background,
             },
           ]}
         />
@@ -504,9 +509,6 @@ function AttendanceScreen({
           <Text style={[styles.attendanceStudentName, { color: colors.foreground }]}>PRINCE RAJ</Text>
           <Text style={[styles.attendanceStudentProgram, { color: colors.mutedForeground }]}>Computer Science and Engineering - V</Text>
         </View>
-        <View style={[styles.demoDataPill, { backgroundColor: colors.accentSoft }]}>
-          <Text style={[styles.demoDataPillText, { color: colors.accentForeground }]}>DEMO DATA</Text>
-        </View>
       </View>
       <View style={[styles.courseList, isTablet && styles.courseListWide]}>
         {courses.map((course) => {
@@ -533,7 +535,6 @@ function AttendanceScreen({
                       progressColor={colors.primary}
                       trackColor={colors.ringTrack}
                     />
-                    <Text numberOfLines={1} style={[styles.courseRingCode, { color: colors.mutedForeground }]}>{course.code}</Text>
                   </View>
                   <View style={styles.courseStats}>
                     <StatRow label="Total" value={String(course.total)} colors={colors} />
@@ -551,7 +552,7 @@ function AttendanceScreen({
               </Pressable>
               {expanded ? (
                 <View style={[styles.recordActions, { borderTopColor: colors.border }]}>
-                  <Text style={[styles.recordPrompt, { color: colors.mutedForeground }]}>Record one class · demo data</Text>
+                  <Text style={[styles.recordPrompt, { color: colors.mutedForeground }]}>Record one class</Text>
                   <View style={styles.recordButtons}>
                     <Pressable
                       onPress={() => recordClass(course.id, true)}
@@ -620,30 +621,69 @@ function NoticesScreen({ colors }: { colors: ReturnType<typeof useColors> }) {
   );
 }
 
-function RegistrationScreen({ colors }: { colors: ReturnType<typeof useColors> }) {
+function RegistrationScreen({ colors, isTablet }: { colors: ReturnType<typeof useColors>; isTablet: boolean }) {
+  const subjects = [
+    'BTE26138-Computer Networks',
+    'BTE25464-Web Programming',
+    'BTE26148-Professional Elective-I - Graph Theory',
+    'BTE26151-Computer Networks Laboratory',
+    'BTE25122-Essence of Indian Knowledge Tradition',
+    'BTE25112-Signals and Systems',
+    'BTE25466-Signal & System Laboratory',
+    'BTE26312-Summer Internship-I (3-4 week)',
+    'BTE25558-Professional Elective - II - Software Project Management',
+    'BTE25465-Web Programming Laboratory',
+  ];
+  const tableBorder = colors.mutedForeground;
+
   return (
-    <View>
-      <View style={styles.pageIntro}>
-        <Text style={[styles.pageHeading, { color: colors.foreground }]}>Exam registration</Text>
-        <Text style={[styles.pageSubheading, { color: colors.mutedForeground }]}>Semester V · Academic year 2026</Text>
+    <View style={styles.registrationScreen}>
+      <View style={[styles.registrationSession, { backgroundColor: colors.card, borderColor: colors.border, marginHorizontal: isTablet ? -18 : -8 }]}>
+        <Text style={[styles.registrationSessionText, { color: colors.foreground }]}>ODD 2026-27</Text>
+        <MaterialCommunityIcons name="chevron-down" size={21} color={colors.mutedForeground} />
       </View>
-      <View style={[styles.statusHero, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={[styles.statusIcon, { backgroundColor: colors.successSoft }]}>
-          <MaterialCommunityIcons name="check-circle-outline" size={27} color={colors.success} />
+
+      <View style={[styles.registrationSummary, { backgroundColor: colors.card, borderColor: colors.border, marginHorizontal: isTablet ? -18 : -8 }]}>
+        <View style={styles.registrationSummaryRow}>
+          <Text style={[styles.registrationSummaryLabel, { color: colors.mutedForeground }]}>Session</Text>
+          <Text style={[styles.registrationSummaryValue, { color: colors.mutedForeground }]}>ODD 2026-27</Text>
         </View>
-        <Text style={[styles.statusLabel, { color: colors.mutedForeground }]}>CURRENT STATUS</Text>
-        <Text style={[styles.statusHeadline, { color: colors.foreground }]}>Registration submitted</Text>
-        <Text style={[styles.statusDescription, { color: colors.mutedForeground }]}>Your semester examination form is marked as submitted in this sample diary.</Text>
-        <View style={[styles.statusMetaRow, { borderTopColor: colors.border }]}>
-          <Text style={[styles.statusMetaLabel, { color: colors.mutedForeground }]}>Submitted on</Text>
-          <Text style={[styles.statusMetaValue, { color: colors.foreground }]}>18 Sep 2026</Text>
+        <View style={styles.registrationSummaryRow}>
+          <Text style={[styles.registrationSummaryLabel, { color: colors.mutedForeground }]}>Semester</Text>
+          <Text style={[styles.registrationSummaryValue, { color: colors.mutedForeground }]}>V</Text>
         </View>
-        <View style={styles.statusMetaRow}>
-          <Text style={[styles.statusMetaLabel, { color: colors.mutedForeground }]}>Subjects selected</Text>
-          <Text style={[styles.statusMetaValue, { color: colors.foreground }]}>8 subjects</Text>
+        <View style={styles.registrationSummaryRow}>
+          <Text style={[styles.registrationSummaryLabel, { color: colors.mutedForeground }]}>Exam Register</Text>
+          <Text style={[styles.registrationSummaryValue, { color: colors.destructive }]}>Exam Not Registered</Text>
         </View>
       </View>
-      <DemoDataCallout colors={colors} text="This status is sample information only. Confirm your registration with the official student portal." />
+
+      <View style={[styles.registrationTable, { marginHorizontal: isTablet ? -28 : -18, borderColor: tableBorder }]}>
+        <View style={[styles.registrationTableHeader, { backgroundColor: colors.card }]}>
+          <View style={[styles.registrationCell, styles.registrationSerialCell, styles.registrationHeaderCell, { borderColor: tableBorder }]}>
+            <Text style={[styles.registrationTableHeaderText, { color: colors.foreground }]}>Sr.N</Text>
+          </View>
+          <View style={[styles.registrationCell, styles.registrationCourseCell, styles.registrationHeaderCell, { borderColor: tableBorder }]}>
+            <Text style={[styles.registrationTableHeaderText, { color: colors.foreground }]}>Course</Text>
+          </View>
+          <View style={[styles.registrationCell, styles.registrationSemesterCell, styles.registrationHeaderCell, styles.registrationLastCell, { borderColor: tableBorder }]}>
+            <Text style={[styles.registrationTableHeaderText, { color: colors.foreground }]}>Sem</Text>
+          </View>
+        </View>
+        {subjects.map((subject, index) => (
+          <View key={subject} style={styles.registrationTableRow}>
+            <View style={[styles.registrationCell, styles.registrationSerialCell, { borderColor: tableBorder }]}>
+              <Text style={[styles.registrationTableText, { color: colors.foreground }]}>{index + 1}</Text>
+            </View>
+            <View style={[styles.registrationCell, styles.registrationCourseCell, { borderColor: tableBorder }]}>
+              <Text style={[styles.registrationTableText, { color: colors.foreground }]}>{subject}</Text>
+            </View>
+            <View style={[styles.registrationCell, styles.registrationSemesterCell, styles.registrationLastCell, { borderColor: tableBorder }]}>
+              <Text style={[styles.registrationTableText, { color: colors.foreground }]}>V</Text>
+            </View>
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
@@ -855,6 +895,8 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 20, fontWeight: '700', letterSpacing: 0.1 },
   homeHeader: { gap: 24 },
   homeHeaderTitle: { fontWeight: '600' },
+  registrationHeader: { gap: 24, minHeight: 60 },
+  registrationHeaderTitle: { fontWeight: '500' },
   headerSubtitle: { color: 'rgba(255,255,255,0.68)', fontSize: 11, marginTop: 2, letterSpacing: 0.35 },
   headerAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#f4f1e9', alignItems: 'center', justifyContent: 'center' },
   headerAvatarText: { fontSize: 12, fontWeight: '800' },
@@ -862,6 +904,7 @@ const styles = StyleSheet.create({
   scrollArea: { flex: 1 },
   pageContent: { width: '100%', alignSelf: 'center', paddingTop: 22, paddingBottom: 24 },
   homePageContent: { flexGrow: 1, paddingTop: 0, paddingBottom: 26 },
+  registrationPageContent: { paddingTop: 0 },
   homeBottomInset: { position: 'absolute', left: 0, right: 0 },
   homeProfileScreen: { width: '100%', alignItems: 'center' },
   homeUniversity: { fontSize: 17, lineHeight: 23, fontWeight: '700', textAlign: 'center' },
@@ -927,11 +970,27 @@ const styles = StyleSheet.create({
   pageIntro: { marginBottom: 18 },
   pageHeading: { fontSize: 25, fontWeight: '700', letterSpacing: -0.4 },
   pageSubheading: { fontSize: 13, marginTop: 5, lineHeight: 19 },
+  registrationScreen: { width: '100%' },
+  registrationSession: { minHeight: 56, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 11 },
+  registrationSessionText: { fontSize: 16, fontWeight: '700' },
+  registrationSummary: { borderWidth: 1, borderRadius: 4, marginTop: 20, paddingHorizontal: 11, paddingVertical: 8 },
+  registrationSummaryRow: { height: 32, flexDirection: 'row', alignItems: 'center' },
+  registrationSummaryLabel: { width: '51%', fontSize: 14 },
+  registrationSummaryValue: { flex: 1, fontSize: 14 },
+  registrationTable: { marginTop: 10, borderTopWidth: 1, borderLeftWidth: 1, borderRightWidth: 1 },
+  registrationTableHeader: { minHeight: 47, flexDirection: 'row' },
+  registrationTableRow: { minHeight: 59, flexDirection: 'row' },
+  registrationCell: { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 3, paddingVertical: 2, borderRightWidth: 1, borderBottomWidth: 1 },
+  registrationSerialCell: { width: '12.2%' },
+  registrationCourseCell: { flex: 1 },
+  registrationSemesterCell: { width: '21%' },
+  registrationLastCell: { borderRightWidth: 0 },
+  registrationHeaderCell: { minHeight: 47 },
+  registrationTableHeaderText: { fontSize: 16, lineHeight: 20, textAlign: 'center' },
+  registrationTableText: { fontSize: 16, lineHeight: 19, textAlign: 'center' },
   attendanceStudentHeading: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 13 },
   attendanceStudentName: { fontSize: 15, fontWeight: '800', letterSpacing: 0.1 },
   attendanceStudentProgram: { fontSize: 13, marginTop: 4 },
-  demoDataPill: { borderRadius: 10, paddingHorizontal: 7, paddingVertical: 5 },
-  demoDataPillText: { fontSize: 8, fontWeight: '800', letterSpacing: 0.45 },
   attendanceSummary: { borderWidth: 1, borderRadius: 17, padding: 15, flexDirection: 'row', alignItems: 'center', gap: 15 },
   summaryDetails: { flex: 1 },
   summaryTitle: { fontSize: 14, fontWeight: '700' },
@@ -951,7 +1010,6 @@ const styles = StyleSheet.create({
   courseHeaderTitle: { color: '#ffffff', textAlign: 'center', fontSize: 14, lineHeight: 18, fontWeight: '500' },
   courseCardBody: { minHeight: 115, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 7, gap: 10 },
   courseRingWrap: { width: 102, height: 102, alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  courseRingCode: { position: 'absolute', bottom: 1, left: 0, right: 0, textAlign: 'center', fontSize: 11 },
   courseStats: { flex: 1, gap: 10 },
   statRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   statLabel: { fontSize: 14 },
