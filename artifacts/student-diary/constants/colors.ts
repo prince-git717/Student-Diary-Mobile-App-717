@@ -48,6 +48,7 @@ const colors = {
     successSoft: '#e6f1eb',
     dangerSoft: '#f7eae7',
     warning: '#bd8d3d',
+    ringTrack: '#bfc3c5',
 
     // Destructive actions (delete, error states)
     destructive: '#b7544b',

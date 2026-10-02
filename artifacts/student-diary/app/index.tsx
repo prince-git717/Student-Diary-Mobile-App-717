@@ -2,9 +2,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import * as Haptics from 'expo-haptics';
-import React, { useEffect, useMemo, useState, type ComponentProps } from 'react';
+import React, { useEffect, useState, type ComponentProps } from 'react';
 import {
   ActivityIndicator,
+  Image,
   Modal,
   Platform,
   Pressable,
@@ -15,7 +16,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 
 type ScreenKey =
@@ -41,6 +42,7 @@ type Course = {
 };
 
 const STORAGE_KEY = 'student-diary-attendance-v1';
+const DEMO_ATTENDANCE_STORAGE_KEY = 'student-diary-attendance-demo-v2';
 const ATTENDANCE_TARGET = 60;
 
 const initialCourses: Course[] = [
@@ -52,6 +54,18 @@ const initialCourses: Course[] = [
   { id: 'signals', code: 'BTE25112', title: 'Signals and Systems', faculty: 'Prem Nath Suman', present: 24, total: 30 },
   { id: 'signals-lab', code: 'BTE25466', title: 'Signal & System Laboratory', faculty: 'R. K. Sharma', present: 15, total: 18 },
   { id: 'software-engineering', code: 'BTE26121', title: 'Software Engineering', faculty: 'Anjali Kumari', present: 20, total: 25 },
+];
+
+const initialAttendanceCourses: Course[] = [
+  { id: 'networks-mamatha', code: 'BTE26138', title: 'Computer Networks', faculty: 'Mamatha Velayapelli', present: 13, total: 21 },
+  { id: 'networks-sayak', code: 'BTE26138', title: 'Computer Networks', faculty: 'Sayak Mandal', present: 32, total: 50 },
+  { id: 'web-programming', code: 'BTE25464', title: 'Web Programming', faculty: 'Kanak Lata', present: 31, total: 51 },
+  { id: 'graph-theory', code: 'BTE26148', title: 'Professional Elective-I - Graph Theory', faculty: 'Dilip Kumar', present: 35, total: 54 },
+  { id: 'networks-lab', code: 'BTE26151', title: 'Computer Networks Laboratory', faculty: 'Megha Srivastava', present: 19, total: 30 },
+  { id: 'knowledge', code: 'BTE25122', title: 'Essence of Indian Knowledge Tradition', faculty: 'Monika Singh', present: 19, total: 29 },
+  { id: 'signals', code: 'BTE25112', title: 'Signals and Systems', faculty: 'Prem Nath Suman', present: 28, total: 46 },
+  { id: 'signals-lab', code: 'BTE25466', title: 'Signal & System Laboratory', faculty: 'Mihir Kumar Mahakud', present: 14, total: 22 },
+  { id: 'software-project', code: 'BTE25558', title: 'Professional Elective - II - Software Project Management', faculty: 'Faculty name cropped in screenshot', present: 40, total: 59 },
 ];
 
 const menuItems: Array<{ key: ScreenKey; label: string; icon: IconName }> = [
@@ -107,30 +121,32 @@ function getPercentage(course: Course) {
   return course.total === 0 ? 0 : Math.round((course.present / course.total) * 100);
 }
 
-function getTotals(courses: Course[]) {
-  return courses.reduce(
-    (totals, course) => ({
-      present: totals.present + course.present,
-      total: totals.total + course.total,
-    }),
-    { present: 0, total: 0 },
-  );
-}
-
-function ProgressRing({ percentage, size = 76, colors }: { percentage: number; size?: number; colors: ReturnType<typeof useColors> }) {
-  const stroke = 7;
+function ProgressRing({
+  percentage,
+  size = 76,
+  colors,
+  progressColor,
+  trackColor,
+}: {
+  percentage: number;
+  size?: number;
+  colors: ReturnType<typeof useColors>;
+  progressColor?: string;
+  trackColor?: string;
+}) {
+  const stroke = progressColor ? 5 : 7;
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - Math.min(percentage, 100) / 100);
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
-        <Circle cx={size / 2} cy={size / 2} r={radius} stroke={colors.border} strokeWidth={stroke} fill="none" />
+        <Circle cx={size / 2} cy={size / 2} r={radius} stroke={trackColor ?? colors.border} strokeWidth={stroke} fill="none" />
         <Circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={percentage >= ATTENDANCE_TARGET ? colors.success : colors.destructive}
+          stroke={progressColor ?? (percentage >= ATTENDANCE_TARGET ? colors.success : colors.destructive)}
           strokeWidth={stroke}
           strokeDasharray={`${circumference} ${circumference}`}
           strokeDashoffset={offset}
@@ -139,8 +155,8 @@ function ProgressRing({ percentage, size = 76, colors }: { percentage: number; s
         />
       </Svg>
       <View style={styles.ringLabel}>
-        <Text style={[styles.ringNumber, { color: colors.foreground }]}>{percentage}</Text>
-        <Text style={[styles.ringPercent, { color: colors.mutedForeground }]}>%</Text>
+        <Text style={[styles.ringNumber, { color: colors.foreground, fontSize: size >= 90 ? 30 : 21 }]}>{percentage}</Text>
+        <Text style={[styles.ringPercent, { color: colors.mutedForeground, fontSize: size >= 90 ? 12 : 10 }]}>%</Text>
       </View>
     </View>
   );
@@ -171,6 +187,7 @@ function InfoRow({ label, value, colors }: { label: string; value: string; color
 
 export default function StudentDiaryScreen() {
   const colors = useColors();
+  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isWide = width >= 820;
   const isTablet = width >= 620;
@@ -178,9 +195,11 @@ export default function StudentDiaryScreen() {
   const [screen, setScreen] = useState<ScreenKey>('home');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [courses, setCourses] = useState<Course[]>(initialCourses);
+  const [attendanceCourses, setAttendanceCourses] = useState<Course[]>(initialAttendanceCourses);
   const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
   const [activeDay, setActiveDay] = useState('Mon');
   const [ready, setReady] = useState(false);
+  const [attendanceReady, setAttendanceReady] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -214,9 +233,38 @@ export default function StudentDiaryScreen() {
     }
   }, [courses, ready]);
 
-  const totals = useMemo(() => getTotals(courses), [courses]);
-  const overallPercentage = totals.total ? Math.round((totals.present / totals.total) * 100) : 0;
-  const atTarget = courses.filter((course) => getPercentage(course) >= ATTENDANCE_TARGET).length;
+  useEffect(() => {
+    let active = true;
+    AsyncStorage.getItem(DEMO_ATTENDANCE_STORAGE_KEY)
+      .then((stored) => {
+        if (!active) return;
+        if (stored) {
+          const parsed: unknown = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.every((course) =>
+            course && typeof course.id === 'string' && Number.isFinite(course.present) &&
+            Number.isFinite(course.total) && course.present >= 0 && course.total >= course.present
+          )) {
+            setAttendanceCourses(parsed as Course[]);
+          }
+        }
+      })
+      .catch(() => {
+        if (active) setAttendanceCourses(initialAttendanceCourses);
+      })
+      .finally(() => {
+        if (active) setAttendanceReady(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (attendanceReady) {
+      AsyncStorage.setItem(DEMO_ATTENDANCE_STORAGE_KEY, JSON.stringify(attendanceCourses)).catch(() => undefined);
+    }
+  }, [attendanceCourses, attendanceReady]);
+
   const pageTitle = menuItems.find((item) => item.key === screen)?.label ?? 'Student Diary';
 
   const navigate = (key: ScreenKey) => {
@@ -227,7 +275,7 @@ export default function StudentDiaryScreen() {
 
   const recordClass = (courseId: string, present: boolean) => {
     void Haptics.selectionAsync();
-    setCourses((current) =>
+    setAttendanceCourses((current) =>
       current.map((course) =>
         course.id === courseId
           ? { ...course, total: course.total + 1, present: course.present + (present ? 1 : 0) }
@@ -237,7 +285,7 @@ export default function StudentDiaryScreen() {
     setExpandedCourse(null);
   };
 
-  if (!ready) {
+  if (!ready || !attendanceReady) {
     return (
       <SafeAreaView style={[styles.loadingScreen, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
         <StatusBar style="light" />
@@ -248,15 +296,15 @@ export default function StudentDiaryScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: screen === 'home' ? colors.primary : colors.background }]} edges={['top', 'bottom']}>
       <StatusBar style="light" />
       <View
         style={[
           styles.appShell,
-          { maxWidth: isWide ? 1180 : 760, paddingTop: Platform.OS === 'web' ? 67 : 0, paddingBottom: Platform.OS === 'web' ? 34 : 0 },
+          { maxWidth: isWide ? 1180 : 760, paddingTop: Platform.OS === 'web' ? 67 : 0, paddingBottom: Platform.OS === 'web' ? 34 : 0, backgroundColor: screen === 'home' ? colors.primary : 'transparent' },
         ]}
       >
-        <View style={[styles.header, { backgroundColor: colors.primary }]}>
+        <View style={[styles.header, screen === 'home' && styles.homeHeader, { backgroundColor: colors.primary }]}>
           <Pressable
             onPress={() => setDrawerOpen(true)}
             accessibilityLabel="Open navigation menu"
@@ -267,16 +315,18 @@ export default function StudentDiaryScreen() {
             <MaterialCommunityIcons name="menu" size={25} color={colors.primaryForeground} />
           </Pressable>
           <View style={styles.headerTitleWrap}>
-            <Text numberOfLines={1} style={[styles.headerTitle, { color: colors.primaryForeground }]}>{screen === 'home' ? 'Student Diary' : pageTitle}</Text>
-            <Text numberOfLines={1} style={styles.headerSubtitle}>ARKA JAIN University · Jharkhand</Text>
+            <Text numberOfLines={1} style={[styles.headerTitle, screen === 'home' && styles.homeHeaderTitle, { color: colors.primaryForeground }]}>{screen === 'home' ? 'Student Diary' : pageTitle}</Text>
+            {screen !== 'home' && screen !== 'attendance' ? <Text numberOfLines={1} style={styles.headerSubtitle}>ARKA JAIN University · Jharkhand</Text> : null}
           </View>
-          <Pressable onPress={() => navigate('information')} accessibilityLabel="Open student profile" accessibilityRole="button" style={styles.headerAvatar}>
-            <Text style={[styles.headerAvatarText, { color: colors.primary }]}>{'PR'}</Text>
-          </Pressable>
+          {screen !== 'home' && screen !== 'attendance' ? (
+            <Pressable onPress={() => navigate('information')} accessibilityLabel="Open student profile" accessibilityRole="button" style={styles.headerAvatar}>
+              <Text style={[styles.headerAvatarText, { color: colors.primary }]}>PR</Text>
+            </Pressable>
+          ) : null}
         </View>
 
         <View style={styles.body}>
-          {isWide ? (
+          {isWide && screen !== 'home' ? (
             <View style={[styles.desktopSidebar, { backgroundColor: colors.card, borderRightColor: colors.border }]}>
               <View style={styles.sidebarIdentity}>
                 <View style={[styles.avatarLarge, { backgroundColor: colors.secondary }]}>
@@ -292,28 +342,21 @@ export default function StudentDiaryScreen() {
           ) : null}
 
           <ScrollView
-            style={styles.scrollArea}
-            contentContainerStyle={[styles.pageContent, { maxWidth: isWide ? 900 : 740, paddingHorizontal: isTablet ? 28 : 18 }]}
+            style={[styles.scrollArea, screen === 'home' && { backgroundColor: colors.card }]}
+            contentContainerStyle={[
+              styles.pageContent,
+              { maxWidth: screen === 'home' ? 460 : isWide ? 900 : 740, paddingHorizontal: screen === 'home' ? 23 : isTablet ? 28 : 18 },
+              screen === 'home' && styles.homePageContent,
+            ]}
             showsVerticalScrollIndicator={false}
           >
             {screen === 'home' ? (
-              <HomeScreen
-                colors={colors}
-                courses={courses}
-                totals={totals}
-                overallPercentage={overallPercentage}
-                atTarget={atTarget}
-                isTablet={isTablet}
-                onNavigate={navigate}
-              />
+              <HomeScreen colors={colors} />
             ) : null}
             {screen === 'attendance' ? (
               <AttendanceScreen
                 colors={colors}
-                courses={courses}
-                totals={totals}
-                overallPercentage={overallPercentage}
-                atTarget={atTarget}
+                courses={attendanceCourses}
                 expandedCourse={expandedCourse}
                 setExpandedCourse={setExpandedCourse}
                 recordClass={recordClass}
@@ -327,7 +370,7 @@ export default function StudentDiaryScreen() {
             {screen === 'fees' ? <FeesScreen colors={colors} /> : null}
             {screen === 'schedule' ? <ScheduleScreen colors={colors} activeDay={activeDay} setActiveDay={setActiveDay} /> : null}
             {screen === 'password' ? <PasswordScreen colors={colors} /> : null}
-            <Text style={[styles.disclaimer, { color: colors.mutedForeground }]}>Sample diary · not connected to university systems</Text>
+            {screen !== 'home' ? <Text style={[styles.disclaimer, { color: colors.mutedForeground }]}>Sample diary · not connected to university systems</Text> : null}
           </ScrollView>
         </View>
       </View>
@@ -361,6 +404,18 @@ export default function StudentDiaryScreen() {
             </View>
           </View>
         </Modal>
+      ) : null}
+      {screen === 'home' ? (
+        <View
+          style={[
+            styles.homeBottomInset,
+            {
+              height: Platform.OS === 'web' ? 34 : insets.bottom,
+              bottom: Platform.OS === 'web' ? 0 : -insets.bottom,
+              backgroundColor: colors.card,
+            },
+          ]}
+        />
       ) : null}
     </SafeAreaView>
   );
@@ -398,121 +453,30 @@ function NavItem({
   );
 }
 
-function HomeScreen({
-  colors,
-  courses,
-  totals,
-  overallPercentage,
-  atTarget,
-  isTablet,
-  onNavigate,
-}: {
-  colors: ReturnType<typeof useColors>;
-  courses: Course[];
-  totals: { present: number; total: number };
-  overallPercentage: number;
-  atTarget: number;
-  isTablet: boolean;
-  onNavigate: (key: ScreenKey) => void;
-}) {
+function HomeScreen({ colors }: { colors: ReturnType<typeof useColors> }) {
   return (
-    <View>
-      <View style={styles.welcomeRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.eyebrow, { color: colors.mutedForeground }]}>SEMESTER V · 2026</Text>
-          <Text style={[styles.welcomeTitle, { color: colors.foreground }]}>Good morning, Prince</Text>
-          <Text style={[styles.welcomeSubtext, { color: colors.mutedForeground }]}>Here’s your college snapshot.</Text>
-        </View>
-        <View style={[styles.homeAvatar, { backgroundColor: colors.secondary }]}>
-          <Text style={[styles.homeAvatarText, { color: colors.primary }]}>PR</Text>
-        </View>
-      </View>
+    <View style={styles.homeProfileScreen}>
+      <Text style={[styles.homeUniversity, { color: colors.primary }]}>ARKA JAIN University Jharkhand</Text>
+      <Image
+        source={require('../assets/images/student-profile.png')}
+        accessibilityLabel="Student portrait"
+        style={styles.homeProfileImage}
+      />
+      <Text style={[styles.homeProfileName, { color: colors.foreground }]}>PRINCE RAJ</Text>
 
-      <Pressable
-        onPress={() => onNavigate('attendance')}
-        accessibilityRole="button"
-        testID="home-attendance-card"
-        style={({ pressed }) => [styles.attendanceHero, { backgroundColor: colors.primary, opacity: pressed ? 0.94 : 1 }]}
-      >
-        <View style={styles.heroTopLine}>
-          <View>
-            <Text style={styles.heroKicker}>OVERALL ATTENDANCE</Text>
-            <Text style={styles.heroValue}>{overallPercentage}<Text style={styles.heroPercent}>%</Text></Text>
-          </View>
-          <ProgressRing percentage={overallPercentage} size={82} colors={{ ...colors, border: 'rgba(255,255,255,0.22)', success: colors.accent, destructive: colors.destructive, foreground: colors.primaryForeground, mutedForeground: colors.primaryForeground }} />
+      <View style={styles.homeInfoList}>
+        <View style={styles.homeInfoItem}>
+          <Text style={[styles.homeInfoLabel, { color: colors.foreground }]}>USN No.</Text>
+          <Text style={[styles.homeInfoValue, { color: colors.mutedForeground }]}>AJU/241355</Text>
         </View>
-        <View style={styles.heroDivider} />
-        <View style={styles.heroBottomLine}>
-          <View style={styles.heroMetric}>
-            <Text style={styles.heroMetricValue}>{totals.present}<Text style={styles.heroMetricSlash}> / {totals.total}</Text></Text>
-            <Text style={styles.heroMetricLabel}>classes attended</Text>
-          </View>
-          <View style={[styles.targetPill, { backgroundColor: 'rgba(255,255,255,0.13)' }]}>
-            <MaterialCommunityIcons name="target" size={16} color={colors.accent} />
-            <Text style={styles.targetPillText}>{atTarget}/{courses.length} at 60%</Text>
-          </View>
-          <MaterialCommunityIcons name="arrow-right" size={19} color={colors.primaryForeground} />
+        <View style={styles.homeInfoItem}>
+          <Text style={[styles.homeInfoLabel, { color: colors.foreground }]}>Branch</Text>
+          <Text style={[styles.homeInfoValue, { color: colors.mutedForeground }]}>Computer Science and Engineering</Text>
         </View>
-      </Pressable>
-
-      <View style={styles.sectionSpacing}>
-        <SectionTitle title="Your courses" action="View all" onAction={() => onNavigate('attendance')} colors={colors} />
-        <View style={[styles.coursePreviewGrid, isTablet && styles.coursePreviewGridWide]}>
-          {courses.slice(0, isTablet ? 4 : 3).map((course) => (
-            <Pressable
-              key={course.id}
-              onPress={() => onNavigate('attendance')}
-              accessibilityRole="button"
-              style={({ pressed }) => [styles.coursePreview, { width: isTablet ? '48.5%' : '100%', backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.78 : 1 }]}
-            >
-              <ProgressRing percentage={getPercentage(course)} size={55} colors={colors} />
-              <View style={{ flex: 1 }}>
-                <Text numberOfLines={1} style={[styles.coursePreviewTitle, { color: colors.foreground }]}>{course.title}</Text>
-                <Text style={[styles.coursePreviewCode, { color: colors.mutedForeground }]}>{course.code}</Text>
-                <Text style={[styles.coursePreviewMeta, { color: colors.success }]}>{course.present} of {course.total} classes</Text>
-              </View>
-            </Pressable>
-          ))}
+        <View style={styles.homeInfoItem}>
+          <Text style={[styles.homeInfoLabel, { color: colors.foreground }]}>Semester</Text>
+          <Text style={[styles.homeInfoValue, { color: colors.mutedForeground }]}>V</Text>
         </View>
-      </View>
-
-      <View style={styles.sectionSpacing}>
-        <SectionTitle title="Quick access" colors={colors} />
-        <View style={styles.quickAccessGrid}>
-          {[
-            { key: 'schedule' as const, label: 'Class schedule', icon: 'calendar-month-outline' as const },
-            { key: 'notices' as const, label: 'Latest notices', icon: 'bullhorn-outline' as const },
-            { key: 'results' as const, label: 'My results', icon: 'text-box-check-outline' as const },
-          ].map((item) => (
-            <Pressable
-              key={item.key}
-              onPress={() => onNavigate(item.key)}
-              accessibilityRole="button"
-              style={({ pressed }) => [styles.quickAccessItem, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.75 : 1 }]}
-            >
-              <View style={[styles.quickIcon, { backgroundColor: colors.secondary }]}>
-                <MaterialCommunityIcons name={item.icon} size={20} color={colors.primary} />
-              </View>
-              <Text style={[styles.quickLabel, { color: colors.foreground }]}>{item.label}</Text>
-              <MaterialCommunityIcons name="arrow-up-right" size={17} color={colors.mutedForeground} />
-            </Pressable>
-          ))}
-        </View>
-      </View>
-
-      <View style={[styles.noticeTeaser, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={[styles.noticeIcon, { backgroundColor: colors.accentSoft }]}>
-          <MaterialCommunityIcons name="bell-outline" size={20} color={colors.accentForeground} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.noticeTeaserLabel, { color: colors.mutedForeground }]}>LATEST NOTICE</Text>
-          <Text style={[styles.noticeTeaserTitle, { color: colors.foreground }]}>{notices[0].title}</Text>
-          <Pressable onPress={() => onNavigate('notices')} accessibilityRole="button" style={styles.noticeLink}>
-            <Text style={[styles.inlineActionText, { color: colors.primary }]}>Read notice</Text>
-            <MaterialCommunityIcons name="arrow-right" size={15} color={colors.primary} />
-          </Pressable>
-        </View>
-        <Text style={[styles.noticeDate, { color: colors.mutedForeground }]}>{notices[0].date}</Text>
       </View>
     </View>
   );
@@ -521,9 +485,6 @@ function HomeScreen({
 function AttendanceScreen({
   colors,
   courses,
-  totals,
-  overallPercentage,
-  atTarget,
   expandedCourse,
   setExpandedCourse,
   recordClass,
@@ -531,9 +492,6 @@ function AttendanceScreen({
 }: {
   colors: ReturnType<typeof useColors>;
   courses: Course[];
-  totals: { present: number; total: number };
-  overallPercentage: number;
-  atTarget: number;
   expandedCourse: string | null;
   setExpandedCourse: (id: string | null) => void;
   recordClass: (courseId: string, present: boolean) => void;
@@ -541,31 +499,19 @@ function AttendanceScreen({
 }) {
   return (
     <View>
-      <View style={styles.pageIntro}>
-        <Text style={[styles.pageHeading, { color: colors.foreground }]}>Attendance</Text>
-        <Text style={[styles.pageSubheading, { color: colors.mutedForeground }]}>Computer Science & Engineering · Semester V</Text>
-      </View>
-      <View style={[styles.attendanceSummary, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <ProgressRing percentage={overallPercentage} size={86} colors={colors} />
-        <View style={styles.summaryDetails}>
-          <Text style={[styles.summaryTitle, { color: colors.foreground }]}>Semester overview</Text>
-          <Text style={[styles.summaryText, { color: colors.mutedForeground }]}>{totals.present} present · {totals.total - totals.present} absent · {totals.total} total</Text>
-          <View style={styles.summaryProgressTrack}>
-            <View style={[styles.summaryProgressFill, { width: `${Math.min(overallPercentage, 100)}%`, backgroundColor: overallPercentage >= ATTENDANCE_TARGET ? colors.success : colors.destructive }]} />
-            <View style={[styles.targetTick, { left: `${ATTENDANCE_TARGET}%`, backgroundColor: colors.accent }]} />
-          </View>
-          <Text style={[styles.targetHint, { color: colors.mutedForeground }]}>{atTarget} of {courses.length} subjects at or above the {ATTENDANCE_TARGET}% target</Text>
+      <View style={styles.attendanceStudentHeading}>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.attendanceStudentName, { color: colors.foreground }]}>PRINCE RAJ</Text>
+          <Text style={[styles.attendanceStudentProgram, { color: colors.mutedForeground }]}>Computer Science and Engineering - V</Text>
         </View>
-      </View>
-      <View style={styles.attendanceNote}>
-        <MaterialCommunityIcons name="information-outline" size={16} color={colors.primary} />
-        <Text style={[styles.attendanceNoteText, { color: colors.mutedForeground }]}>Percentages are calculated from present ÷ total. Expand a subject to record a class.</Text>
+        <View style={[styles.demoDataPill, { backgroundColor: colors.accentSoft }]}>
+          <Text style={[styles.demoDataPillText, { color: colors.accentForeground }]}>DEMO DATA</Text>
+        </View>
       </View>
       <View style={[styles.courseList, isTablet && styles.courseListWide]}>
         {courses.map((course) => {
           const percentage = getPercentage(course);
           const expanded = expandedCourse === course.id;
-          const eligible = percentage >= ATTENDANCE_TARGET;
           return (
             <View key={course.id} style={[styles.courseCard, isTablet && styles.courseCardWide, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Pressable
@@ -576,33 +522,36 @@ function AttendanceScreen({
                 style={styles.courseCardPress}
               >
                 <View style={[styles.courseCardHeader, { backgroundColor: colors.primary }]}>
-                  <View style={styles.courseHeadingText}>
-                    <Text style={styles.courseCode}>{course.code}</Text>
-                    <Text numberOfLines={2} style={styles.courseTitle}>{course.title}</Text>
-                  </View>
-                  <MaterialCommunityIcons name={expanded ? 'chevron-up' : 'chevron-down'} size={20} color={colors.primaryForeground} />
+                  <Text numberOfLines={2} style={styles.courseHeaderTitle}>{course.code}--{course.title}</Text>
                 </View>
                 <View style={styles.courseCardBody}>
-                  <ProgressRing percentage={percentage} size={82} colors={colors} />
+                  <View style={styles.courseRingWrap}>
+                    <ProgressRing
+                      percentage={percentage}
+                      size={98}
+                      colors={colors}
+                      progressColor={colors.primary}
+                      trackColor={colors.ringTrack}
+                    />
+                    <Text numberOfLines={1} style={[styles.courseRingCode, { color: colors.mutedForeground }]}>{course.code}</Text>
+                  </View>
                   <View style={styles.courseStats}>
                     <StatRow label="Total" value={String(course.total)} colors={colors} />
-                    <StatRow label="Present" value={String(course.present)} colors={colors} valueColor={colors.success} />
-                    <StatRow label="Absent" value={String(course.total - course.present)} colors={colors} valueColor={colors.mutedForeground} />
+                    <StatRow label="Present" value={String(course.present)} colors={colors} />
+                    <StatRow label="Absent" value={String(course.total - course.present)} colors={colors} />
                   </View>
-                  <View style={[styles.targetBadge, { backgroundColor: eligible ? colors.successSoft : colors.dangerSoft }]}>
-                    <MaterialCommunityIcons name={eligible ? 'check-circle-outline' : 'alert-circle-outline'} size={16} color={eligible ? colors.success : colors.destructive} />
-                    <Text style={[styles.targetBadgeText, { color: eligible ? colors.success : colors.destructive }]}>{eligible ? 'On track' : 'Below target'}</Text>
+                  <View style={[styles.attendanceArrow, { borderColor: colors.mutedForeground }]}>
+                    <MaterialCommunityIcons name={expanded ? 'chevron-up' : 'chevron-right'} size={18} color={colors.mutedForeground} />
                   </View>
                 </View>
                 <View style={[styles.facultyRow, { borderTopColor: colors.border }]}>
-                  <Text style={[styles.facultyLabel, { color: colors.mutedForeground }]}>Faculty</Text>
-                  <Text numberOfLines={1} style={[styles.facultyName, { color: colors.foreground }]}>{course.faculty}</Text>
-                  <MaterialCommunityIcons name="chevron-right" size={18} color={colors.mutedForeground} />
+                  <Text style={[styles.facultyLabel, { color: colors.foreground }]}>Faculty Name</Text>
+                  <Text numberOfLines={1} style={[styles.facultyName, { color: colors.mutedForeground }]}>{course.faculty}</Text>
                 </View>
               </Pressable>
               {expanded ? (
                 <View style={[styles.recordActions, { borderTopColor: colors.border }]}>
-                  <Text style={[styles.recordPrompt, { color: colors.mutedForeground }]}>Record one class</Text>
+                  <Text style={[styles.recordPrompt, { color: colors.mutedForeground }]}>Record one class · demo data</Text>
                   <View style={styles.recordButtons}>
                     <Pressable
                       onPress={() => recordClass(course.id, true)}
@@ -904,12 +853,24 @@ const styles = StyleSheet.create({
   headerIconButton: { width: 38, height: 42, alignItems: 'flex-start', justifyContent: 'center' },
   headerTitleWrap: { flex: 1, justifyContent: 'center' },
   headerTitle: { fontSize: 20, fontWeight: '700', letterSpacing: 0.1 },
+  homeHeader: { gap: 24 },
+  homeHeaderTitle: { fontWeight: '600' },
   headerSubtitle: { color: 'rgba(255,255,255,0.68)', fontSize: 11, marginTop: 2, letterSpacing: 0.35 },
   headerAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#f4f1e9', alignItems: 'center', justifyContent: 'center' },
   headerAvatarText: { fontSize: 12, fontWeight: '800' },
   body: { flex: 1, flexDirection: 'row' },
   scrollArea: { flex: 1 },
   pageContent: { width: '100%', alignSelf: 'center', paddingTop: 22, paddingBottom: 24 },
+  homePageContent: { flexGrow: 1, paddingTop: 0, paddingBottom: 26 },
+  homeBottomInset: { position: 'absolute', left: 0, right: 0 },
+  homeProfileScreen: { width: '100%', alignItems: 'center' },
+  homeUniversity: { fontSize: 17, lineHeight: 23, fontWeight: '700', textAlign: 'center' },
+  homeProfileImage: { width: 134, height: 134, borderRadius: 67, marginTop: 24 },
+  homeProfileName: { fontSize: 20, lineHeight: 25, fontWeight: '400', marginTop: 15 },
+  homeInfoList: { alignSelf: 'stretch', marginTop: 42 },
+  homeInfoItem: { marginBottom: 18 },
+  homeInfoLabel: { fontSize: 14, lineHeight: 19 },
+  homeInfoValue: { fontSize: 16, lineHeight: 22, marginTop: 7 },
   desktopSidebar: { width: 236, borderRightWidth: 1, paddingHorizontal: 14, paddingTop: 20 },
   sidebarIdentity: { alignItems: 'center', paddingBottom: 20, marginBottom: 12 },
   avatarLarge: { width: 68, height: 68, borderRadius: 34, alignItems: 'center', justifyContent: 'center' },
@@ -966,6 +927,11 @@ const styles = StyleSheet.create({
   pageIntro: { marginBottom: 18 },
   pageHeading: { fontSize: 25, fontWeight: '700', letterSpacing: -0.4 },
   pageSubheading: { fontSize: 13, marginTop: 5, lineHeight: 19 },
+  attendanceStudentHeading: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 13 },
+  attendanceStudentName: { fontSize: 15, fontWeight: '800', letterSpacing: 0.1 },
+  attendanceStudentProgram: { fontSize: 13, marginTop: 4 },
+  demoDataPill: { borderRadius: 10, paddingHorizontal: 7, paddingVertical: 5 },
+  demoDataPillText: { fontSize: 8, fontWeight: '800', letterSpacing: 0.45 },
   attendanceSummary: { borderWidth: 1, borderRadius: 17, padding: 15, flexDirection: 'row', alignItems: 'center', gap: 15 },
   summaryDetails: { flex: 1 },
   summaryTitle: { fontSize: 14, fontWeight: '700' },
@@ -978,23 +944,22 @@ const styles = StyleSheet.create({
   attendanceNoteText: { fontSize: 11, lineHeight: 16, flex: 1 },
   courseList: { gap: 13 },
   courseListWide: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start' },
-  courseCard: { borderWidth: 1, borderRadius: 13, overflow: 'hidden', width: '100%' },
+  courseCard: { borderWidth: 1, borderRadius: 4, overflow: 'hidden', width: '100%' },
   courseCardWide: { width: '48.7%' },
   courseCardPress: {},
-  courseCardHeader: { minHeight: 47, paddingVertical: 9, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  courseHeadingText: { flex: 1 },
-  courseCode: { color: 'rgba(255,255,255,0.66)', fontSize: 9, fontWeight: '600', letterSpacing: 0.65 },
-  courseTitle: { color: '#ffffff', fontSize: 12, fontWeight: '600', marginTop: 2, lineHeight: 16 },
-  courseCardBody: { flexDirection: 'row', alignItems: 'center', padding: 13, gap: 12 },
-  courseStats: { flex: 1, gap: 7 },
+  courseCardHeader: { minHeight: 36, paddingVertical: 7, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center' },
+  courseHeaderTitle: { color: '#ffffff', textAlign: 'center', fontSize: 14, lineHeight: 18, fontWeight: '500' },
+  courseCardBody: { minHeight: 115, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 7, gap: 10 },
+  courseRingWrap: { width: 102, height: 102, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  courseRingCode: { position: 'absolute', bottom: 1, left: 0, right: 0, textAlign: 'center', fontSize: 11 },
+  courseStats: { flex: 1, gap: 10 },
   statRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  statLabel: { fontSize: 12 },
-  statValue: { fontSize: 12, fontWeight: '600', minWidth: 24, textAlign: 'right' },
-  targetBadge: { position: 'absolute', right: 11, bottom: 7, flexDirection: 'row', alignItems: 'center', gap: 3, paddingVertical: 3, paddingHorizontal: 6, borderRadius: 9 },
-  targetBadgeText: { fontSize: 8, fontWeight: '700' },
-  facultyRow: { borderTopWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 7, minHeight: 38, paddingHorizontal: 11 },
-  facultyLabel: { fontSize: 10, fontWeight: '600' },
-  facultyName: { fontSize: 11, flex: 1 },
+  statLabel: { fontSize: 14 },
+  statValue: { fontSize: 14, minWidth: 24, textAlign: 'right' },
+  attendanceArrow: { width: 23, height: 23, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  facultyRow: { borderTopWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 37, paddingHorizontal: 8 },
+  facultyLabel: { fontSize: 14 },
+  facultyName: { fontSize: 14, flex: 1 },
   recordActions: { borderTopWidth: 1, padding: 12 },
   recordPrompt: { fontSize: 11, marginBottom: 9 },
   recordButtons: { flexDirection: 'row', gap: 8 },
