@@ -220,7 +220,7 @@ export default function StudentDiaryScreen() {
   const isWide = width >= 820;
   const isTablet = width >= 620;
 
-  const [screen, setScreen] = useState<ScreenKey>('password');
+  const [screen, setScreen] = useState<ScreenKey>('attendance');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [courses, setCourses] = useState<Course[]>(initialCourses);
   const [attendanceCourses, setAttendanceCourses] = useState<Course[]>(initialAttendanceCourses);
@@ -1174,12 +1174,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
   },
-  feeRow: { minHeight: 40, flexDirection: 'row', alignItems: 'center' },
+  feeRow: { minHeight: 39.6, flexDirection: 'row', alignItems: 'center' },
   feeRowLabel: { width: '50%', fontSize: 17, lineHeight: 22, fontWeight: '700' },
   feeRowValue: { flex: 1, fontSize: 16, lineHeight: 21 },
-  feesFooter: { position: 'absolute', left: 0, right: 0, minHeight: 70, paddingHorizontal: 18, justifyContent: 'center', alignItems: 'flex-end', zIndex: 3 },
+  feesFooter: { position: 'absolute', left: 0, right: 0, minHeight: 70, paddingHorizontal: 22, justifyContent: 'center', alignItems: 'flex-end', zIndex: 3 },
   feeFeedback: { width: '100%', textAlign: 'right', fontSize: 10, marginBottom: 4 },
-  outstandingButton: { minWidth: 214, minHeight: 43, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
+  outstandingButton: { width: 213, minHeight: 43, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
   outstandingButtonText: { color: '#ffffff', fontSize: 14, fontWeight: '400' },
   scheduleScreen: { width: '100%' },
   scheduleDayPicker: { width: '100%', minHeight: 46, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
