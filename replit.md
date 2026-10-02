@@ -1,15 +1,20 @@
-# [Project name]
+# Student Diary
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+An Expo student companion for viewing attendance, notices, schedules, and academic records.
 
 ## Run & Operate
 
+- Run the managed workflow `artifacts/student-diary: expo` for the mobile app and browser preview. Replit supplies its port and Expo preview domain.
+- Dependencies must be installed with `pnpm install` from the repository root before starting the imported project.
+- `pnpm --filter @workspace/student-diary run typecheck` — check the mobile app.
+- From `artifacts/student-diary`, run `CI=1 pnpm exec expo install --check` and `pnpm dlx expo-doctor@latest` to check Expo compatibility.
+- Student Diary currently stores attendance locally with AsyncStorage; its preview does not require the API server or a database.
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required env for the API server only: `DATABASE_URL` — Postgres connection string
 
 ## Stack
 
