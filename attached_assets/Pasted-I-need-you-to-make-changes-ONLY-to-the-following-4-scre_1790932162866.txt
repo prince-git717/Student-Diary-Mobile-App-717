@@ -1,0 +1,104 @@
+I need you to make changes ONLY to the following 4 screens of my Student Diary Mobile App:
+
+1. Class Schedule
+2. Change Password
+3. Student Information
+4. Fees Paid
+
+I have attached reference screenshots for all 4 screens. Use those screenshots as the EXACT UI and layout reference.
+
+IMPORTANT:
+- Recreate these 4 screens as closely as possible to the provided screenshots.
+- Match the screenshots' layout, spacing, typography, colors, borders, cards, tabs, icons, alignment, headings, labels, and overall visual structure.
+- The screens should look like the same original application shown in the screenshots.
+- Keep the existing app's navigation and functionality intact.
+- Do NOT redesign the app.
+- Do NOT modernize the UI.
+- Do NOT add animations or extra UI elements.
+- Do NOT add new sections.
+- Do NOT remove anything that exists in the screenshots.
+- Do NOT make changes to any other screen or feature.
+- Do NOT change the existing theme, navigation, backend, authentication, database, or unrelated components.
+- Do NOT modify anything outside these 4 requested screens unless it is absolutely required for these screens to work.
+
+SCREEN 1 — CLASS SCHEDULE:
+Make the Class Schedule screen match the provided screenshot exactly.
+It should contain:
+- The same top navigation/header
+- Hamburger menu icon on the left
+- "Class Schedule" title
+- Day selector showing the current selected day (Friday in the reference)
+- Dropdown indicator on the right
+- Subject cards exactly like the screenshot
+- Dark blue card headers
+- Timer/clock icon on the right side of each card header
+- Subject Name label
+- Faculty Name label
+- Same spacing, card size, shadows, typography, colors and alignment
+- Include the same subjects and faculty information shown in the screenshot.
+- Preserve the same vertical scrolling behavior.
+
+SCREEN 2 — CHANGE PASSWORD:
+Make the Change Password screen match the provided screenshot exactly.
+It should contain:
+- Same dark blue header
+- Same hamburger menu
+- "Change Password" title
+- Current Password field
+- New Password field
+- Confirm Password field
+- Submit button
+- Password requirement/help text at the bottom
+- Same font sizes, spacing, colors, field underline style, button size and positioning as the screenshot.
+- Keep the existing password-change functionality working.
+
+SCREEN 3 — STUDENT INFORMATION:
+Make the Student Information screen match the provided screenshot exactly.
+It should contain:
+- Back arrow
+- "Student Information" title
+- Three tabs:
+  PERSONAL DETAIL
+  CONTACT DETAIL
+  POSTAL DETAIL
+- Same active-tab underline
+- Same two-column information layout
+- Same labels, typography, spacing and alignment
+- Use the same information/data structure shown in the screenshot.
+- The Contact Detail and Postal Detail tabs must remain functional if they already exist.
+- Do not change unrelated student information functionality.
+
+SCREEN 4 — FEES PAID:
+Make the Fees Paid screen match the provided screenshot exactly.
+It should contain:
+- Same dark blue header
+- Hamburger menu
+- "Fees Paid" title
+- Vertically stacked fee cards
+- Same card layout and spacing
+- Same fields:
+  Session
+  Amount
+  Receipt No
+  Date
+  Fees Type
+  Semester Name
+- Same typography, colors, borders, shadows and alignment
+- Include the "VIEW OUTSTANDING FEES" button exactly as shown.
+- Preserve the existing fee-related functionality.
+
+MOST IMPORTANT RULE:
+ONLY modify these 4 screens according to the screenshots.
+
+Everything else in the application must remain EXACTLY AS IT IS currently.
+
+Before making changes, inspect the existing project structure and reuse the existing components/styles/data wherever possible. Do not unnecessarily create duplicate components or rewrite unrelated code.
+
+Do not make assumptions about other screens.
+
+After completing the changes, verify that:
+1. All 4 screens visually match their respective screenshots.
+2. Existing navigation still works.
+3. Existing functionality still works.
+4. No unrelated screen or feature has been changed.
+5. No unnecessary files or dependencies have been added.

@@ -12,6 +12,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
   useWindowDimensions,
 } from 'react-native';
@@ -105,8 +106,10 @@ const scheduleByDay: Record<string, Array<{ time: string; code: string; title: s
     { time: '11:00 AM', code: 'BTE26138', title: 'Computer Networks', room: 'Block B · 204', faculty: 'M. Velayapelli' },
   ],
   Fri: [
-    { time: '10:00 AM', code: 'BTE25464', title: 'Web Programming', room: 'Lab 03', faculty: 'Kanak Lata' },
-    { time: '12:00 PM', code: 'BTE26121', title: 'Software Engineering', room: 'Block A · 118', faculty: 'Anjali Kumari' },
+    { time: '', code: 'BTE26148', title: 'Professional Elective-I - Graph Theory', room: '', faculty: 'Dilip Kumar' },
+    { time: '', code: 'BTE26138', title: 'Computer Networks', room: '', faculty: 'Sayak Mandal' },
+    { time: '', code: 'BTE25558', title: 'Professional Elective - II - Software Project Management', room: '', faculty: 'Shuvadip Mandal' },
+    { time: '', code: 'BTE25464', title: 'Web Programming', room: '', faculty: 'Kanak Lata' },
   ],
 };
 
@@ -176,14 +179,39 @@ function SectionTitle({ title, action, onAction, colors }: { title: string; acti
   );
 }
 
-function InfoRow({ label, value, colors }: { label: string; value: string; colors: ReturnType<typeof useColors> }) {
-  return (
-    <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
-      <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>{label}</Text>
-      <Text style={[styles.infoValue, { color: colors.foreground }]}>{value}</Text>
-    </View>
-  );
-}
+const personalDetails = [
+  ['Enrollment No', 'AJU/241355'],
+  ['Student Name', 'PRINCE RAJ'],
+  ['Degree', 'Bachelor of Technology'],
+  ['Branch', 'Computer Science and Engineering'],
+  ['Semester', 'V'],
+  ["Father's Name", 'ARUN CHOURASIA'],
+  ["Mother's Name", 'MANISHA DEVI'],
+  ['Gender', 'Male'],
+  ['DOB', '05-02-2005'],
+  ['Weight', '-'],
+  ['Caste', '-'],
+  ['Category', 'OBC'],
+  ['Blood Group', 'B+'],
+] as const;
+
+const studentInformationTabs = {
+  'PERSONAL DETAIL': personalDetails,
+  'CONTACT DETAIL': [
+    ['Mobile No', '-'],
+    ['Email ID', '-'],
+    ['Alternate Contact No', '-'],
+    ['Emergency Contact', '-'],
+  ],
+  'POSTAL DETAIL': [
+    ['Address', '-'],
+    ['City', '-'],
+    ['State', '-'],
+    ['PIN Code', '-'],
+  ],
+} as const;
+
+type StudentInformationTab = keyof typeof studentInformationTabs;
 
 export default function StudentDiaryScreen() {
   const colors = useColors();
@@ -192,12 +220,21 @@ export default function StudentDiaryScreen() {
   const isWide = width >= 820;
   const isTablet = width >= 620;
 
-  const [screen, setScreen] = useState<ScreenKey>('attendance');
+  const [screen, setScreen] = useState<ScreenKey>('password');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [courses, setCourses] = useState<Course[]>(initialCourses);
   const [attendanceCourses, setAttendanceCourses] = useState<Course[]>(initialAttendanceCourses);
   const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
-  const [activeDay, setActiveDay] = useState('Mon');
+  const [activeDay, setActiveDay] = useState('Fri');
+  const [dayMenuOpen, setDayMenuOpen] = useState(false);
+  const [informationTab, setInformationTab] = useState<StudentInformationTab>('PERSONAL DETAIL');
+  const [informationReturnScreen, setInformationReturnScreen] = useState<ScreenKey>('home');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordMessage, setPasswordMessage] = useState('');
+  const [feeMessage, setFeeMessage] = useState('');
+  const isReferenceScreen = ['information', 'fees', 'schedule', 'password'].includes(screen);
   const [ready, setReady] = useState(false);
   const [attendanceReady, setAttendanceReady] = useState(false);
 
@@ -265,9 +302,18 @@ export default function StudentDiaryScreen() {
     }
   }, [attendanceCourses, attendanceReady]);
 
-  const pageTitle = menuItems.find((item) => item.key === screen)?.label ?? 'Student Diary';
+  const pageTitle = screen === 'information'
+    ? 'Student Information'
+    : screen === 'fees'
+      ? 'Fees Paid'
+      : screen === 'schedule'
+        ? 'Class Schedule'
+        : screen === 'password'
+          ? 'Change Password'
+          : menuItems.find((item) => item.key === screen)?.label ?? 'Student Diary';
 
   const navigate = (key: ScreenKey) => {
+    if (key === 'information') setInformationReturnScreen(screen);
     setScreen(key);
     setDrawerOpen(false);
     setExpandedCourse(null);
@@ -296,29 +342,29 @@ export default function StudentDiaryScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: screen === 'home' || screen === 'registration' ? colors.primary : colors.background }]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: screen === 'home' || screen === 'registration' || isReferenceScreen ? colors.primary : colors.background }]} edges={['top', 'bottom']}>
       <StatusBar style="light" />
       <View
         style={[
           styles.appShell,
-          { maxWidth: isWide ? 1180 : 760, paddingTop: Platform.OS === 'web' ? 67 : 0, paddingBottom: Platform.OS === 'web' ? 34 : 0, backgroundColor: screen === 'home' || screen === 'registration' ? colors.primary : 'transparent' },
+          { maxWidth: isWide ? 1180 : 760, paddingTop: Platform.OS === 'web' ? (isReferenceScreen ? 55 : 67) : 0, paddingBottom: Platform.OS === 'web' ? 34 : 0, backgroundColor: screen === 'home' || screen === 'registration' || isReferenceScreen ? colors.primary : 'transparent' },
         ]}
       >
-        <View style={[styles.header, screen === 'home' && styles.homeHeader, screen === 'registration' && styles.registrationHeader, { backgroundColor: colors.primary }]}>
+        <View style={[styles.header, screen === 'home' && styles.homeHeader, screen === 'registration' && styles.registrationHeader, ['information', 'fees', 'schedule', 'password'].includes(screen) && styles.referenceHeader, { backgroundColor: colors.primary }]}>
           <Pressable
-            onPress={() => screen === 'registration' ? navigate('home') : setDrawerOpen(true)}
-            accessibilityLabel={screen === 'registration' ? 'Back to home' : 'Open navigation menu'}
+            onPress={() => screen === 'registration' ? navigate('home') : screen === 'information' ? navigate(informationReturnScreen) : setDrawerOpen(true)}
+            accessibilityLabel={screen === 'registration' || screen === 'information' ? 'Go back' : 'Open navigation menu'}
             accessibilityRole="button"
-            testID={screen === 'registration' ? 'back-from-registration' : 'open-menu'}
+            testID={screen === 'registration' ? 'back-from-registration' : screen === 'information' ? 'back-from-information' : 'open-menu'}
             style={({ pressed }) => [styles.headerIconButton, { opacity: pressed ? 0.7 : 1 }]}
           >
-            <MaterialCommunityIcons name={screen === 'registration' ? 'arrow-left' : 'menu'} size={25} color={colors.primaryForeground} />
+            <MaterialCommunityIcons name={screen === 'registration' || screen === 'information' ? 'arrow-left' : 'menu'} size={25} color={colors.primaryForeground} />
           </Pressable>
           <View style={styles.headerTitleWrap}>
-            <Text numberOfLines={1} style={[styles.headerTitle, screen === 'home' && styles.homeHeaderTitle, screen === 'registration' && styles.registrationHeaderTitle, { color: colors.primaryForeground }]}>{screen === 'home' ? 'Student Diary' : screen === 'registration' ? 'Show Exam Register Status' : pageTitle}</Text>
-            {screen !== 'home' && screen !== 'attendance' && screen !== 'registration' ? <Text numberOfLines={1} style={styles.headerSubtitle}>ARKA JAIN University · Jharkhand</Text> : null}
+            <Text numberOfLines={1} style={[styles.headerTitle, screen === 'home' && styles.homeHeaderTitle, screen === 'registration' && styles.registrationHeaderTitle, ['information', 'fees', 'schedule', 'password'].includes(screen) && styles.referenceHeaderTitle, { color: colors.primaryForeground }]}>{screen === 'home' ? 'Student Diary' : screen === 'registration' ? 'Show Exam Register Status' : pageTitle}</Text>
+            {screen !== 'home' && screen !== 'attendance' && screen !== 'registration' && !['information', 'fees', 'schedule', 'password'].includes(screen) ? <Text numberOfLines={1} style={styles.headerSubtitle}>ARKA JAIN University · Jharkhand</Text> : null}
           </View>
-          {screen !== 'home' && screen !== 'attendance' && screen !== 'registration' ? (
+          {screen !== 'home' && screen !== 'attendance' && screen !== 'registration' && !['information', 'fees', 'schedule', 'password'].includes(screen) ? (
             <Pressable onPress={() => navigate('information')} accessibilityLabel="Open student profile" accessibilityRole="button" style={styles.headerAvatar}>
               <Text style={[styles.headerAvatarText, { color: colors.primary }]}>PR</Text>
             </Pressable>
@@ -345,13 +391,16 @@ export default function StudentDiaryScreen() {
             style={[
               styles.scrollArea,
               screen === 'home' && { backgroundColor: colors.card },
-              screen === 'registration' && { backgroundColor: colors.background },
+              (screen === 'registration' || isReferenceScreen) && { backgroundColor: colors.background },
             ]}
             contentContainerStyle={[
               styles.pageContent,
               { maxWidth: screen === 'home' ? 460 : isWide ? 900 : 740, paddingHorizontal: screen === 'home' ? 23 : isTablet ? 28 : 18 },
               screen === 'home' && styles.homePageContent,
               screen === 'registration' && styles.registrationPageContent,
+              ['information', 'schedule'].includes(screen) && styles.edgeToEdgePageContent,
+              screen === 'fees' && styles.feesPageContent,
+              screen === 'password' && styles.passwordPageContent,
             ]}
             showsVerticalScrollIndicator={false}
           >
@@ -371,12 +420,20 @@ export default function StudentDiaryScreen() {
             {screen === 'notices' ? <NoticesScreen colors={colors} /> : null}
             {screen === 'registration' ? <RegistrationScreen colors={colors} isTablet={isTablet} /> : null}
             {screen === 'results' ? <ResultsScreen colors={colors} /> : null}
-            {screen === 'information' ? <InformationScreen colors={colors} /> : null}
+            {screen === 'information' ? <InformationScreen colors={colors} activeTab={informationTab} setActiveTab={setInformationTab} /> : null}
             {screen === 'fees' ? <FeesScreen colors={colors} /> : null}
-            {screen === 'schedule' ? <ScheduleScreen colors={colors} activeDay={activeDay} setActiveDay={setActiveDay} /> : null}
-            {screen === 'password' ? <PasswordScreen colors={colors} /> : null}
-            {screen !== 'home' ? <Text style={[styles.disclaimer, { color: colors.mutedForeground }]}>Sample diary · not connected to university systems</Text> : null}
+            {screen === 'schedule' ? <ScheduleScreen colors={colors} activeDay={activeDay} setActiveDay={setActiveDay} dayMenuOpen={dayMenuOpen} setDayMenuOpen={setDayMenuOpen} /> : null}
+            {screen === 'password' ? <PasswordScreen colors={colors} currentPassword={currentPassword} setCurrentPassword={setCurrentPassword} newPassword={newPassword} setNewPassword={setNewPassword} confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword} message={passwordMessage} setMessage={setPasswordMessage} /> : null}
+            {screen !== 'home' && !['information', 'fees', 'schedule', 'password'].includes(screen) ? <Text style={[styles.disclaimer, { color: colors.mutedForeground }]}>Sample diary · not connected to university systems</Text> : null}
           </ScrollView>
+          {screen === 'fees' ? (
+            <View style={[styles.feesFooter, { backgroundColor: colors.background, bottom: -20 }]}>
+              {feeMessage ? <Text style={[styles.feeFeedback, { color: colors.mutedForeground }]}>{feeMessage}</Text> : null}
+              <Pressable onPress={() => setFeeMessage('Outstanding fee details are not available in this local sample.')} accessibilityRole="button" testID="view-outstanding-fees" style={({ pressed }) => [styles.outstandingButton, { backgroundColor: colors.primary, opacity: pressed ? 0.8 : 1 }]}>
+                <Text style={styles.outstandingButtonText}>VIEW OUTSTANDING FEES</Text>
+              </Pressable>
+            </View>
+          ) : null}
         </View>
       </View>
 
@@ -410,7 +467,7 @@ export default function StudentDiaryScreen() {
           </View>
         </Modal>
       ) : null}
-      {screen === 'home' || screen === 'registration' ? (
+      {screen === 'home' || screen === 'registration' || isReferenceScreen ? (
         <View
           style={[
             styles.homeBottomInset,
@@ -727,71 +784,64 @@ function ResultsScreen({ colors }: { colors: ReturnType<typeof useColors> }) {
   );
 }
 
-function InformationScreen({ colors }: { colors: ReturnType<typeof useColors> }) {
+function InformationScreen({
+  colors,
+  activeTab,
+  setActiveTab,
+}: {
+  colors: ReturnType<typeof useColors>;
+  activeTab: StudentInformationTab;
+  setActiveTab: (tab: StudentInformationTab) => void;
+}) {
   return (
-    <View>
-      <View style={styles.pageIntro}>
-        <Text style={[styles.pageHeading, { color: colors.foreground }]}>My information</Text>
-        <Text style={[styles.pageSubheading, { color: colors.mutedForeground }]}>Student profile and course details</Text>
+    <View style={styles.studentInfoScreen}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.studentInfoTabs, { borderBottomColor: colors.border }]} contentContainerStyle={styles.studentInfoTabsContent}>
+        {(Object.keys(studentInformationTabs) as StudentInformationTab[]).map((tab) => (
+          <Pressable key={tab} onPress={() => setActiveTab(tab)} accessibilityRole="tab" accessibilityState={{ selected: activeTab === tab }} style={styles.studentInfoTab}>
+            <Text numberOfLines={1} style={[styles.studentInfoTabText, { color: activeTab === tab ? colors.foreground : colors.mutedForeground }]}>{tab}</Text>
+            {activeTab === tab ? <View style={[styles.studentInfoTabUnderline, { backgroundColor: colors.primary }]} /> : null}
+          </Pressable>
+        ))}
+      </ScrollView>
+      <View style={styles.studentInfoRows}>
+        {studentInformationTabs[activeTab].map(([label, value]) => (
+          <View key={label} style={styles.studentInfoRow}>
+            <Text style={[styles.studentInfoLabel, { color: colors.foreground }]}>{label}</Text>
+            <Text style={[styles.studentInfoValue, { color: colors.mutedForeground }]}>{value}</Text>
+          </View>
+        ))}
       </View>
-      <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={[styles.profileAvatar, { backgroundColor: colors.primary }]}>
-          <Text style={[styles.profileAvatarText, { color: colors.primaryForeground }]}>PR</Text>
-        </View>
-        <Text style={[styles.profileName, { color: colors.foreground }]}>Prince Raj</Text>
-        <Text style={[styles.profileProgram, { color: colors.mutedForeground }]}>Computer Science & Engineering</Text>
-        <View style={[styles.profilePill, { backgroundColor: colors.secondary }]}>
-          <Text style={[styles.profilePillText, { color: colors.primary }]}>Semester V</Text>
-        </View>
-      </View>
-      <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <InfoRow label="USN No." value="AJU/241355" colors={colors} />
-        <InfoRow label="College" value="ARKA JAIN University" colors={colors} />
-        <InfoRow label="Department" value="Computer Science & Engineering" colors={colors} />
-        <InfoRow label="Programme" value="B.Tech" colors={colors} />
-        <InfoRow label="Current semester" value="V" colors={colors} />
-        <InfoRow label="Academic year" value="2026–27" colors={colors} />
-      </View>
-      <DemoDataCallout colors={colors} text="Profile information is included as an editable prototype example." />
     </View>
   );
 }
 
 function FeesScreen({ colors }: { colors: ReturnType<typeof useColors> }) {
   const feeRows = [
-    { label: 'Tuition fee · Semester V', date: '12 AUG 2026', amount: '₹ 54,000', status: 'Paid' },
-    { label: 'Library & student services', date: '12 AUG 2026', amount: '₹ 3,500', status: 'Paid' },
-    { label: 'Examination fee', date: '18 SEP 2026', amount: '₹ 2,200', status: 'Paid' },
+    { session: 'EVEN 2023-24', amount: '25000.00', receipt: 'C/TF/21/51254', date: '05-07-24', type: 'Admission Fees', semester: 'I' },
+    { session: 'EVEN 2023-24', amount: '22000.00', receipt: 'C/TF/21/56104', date: '22-08-24', type: 'Admission Fees', semester: 'I' },
+    { session: 'EVEN 2023-24', amount: '10000.00', receipt: 'C/TF/21/57544', date: '18-09-24', type: 'Admission Fees', semester: 'I' },
   ];
   return (
-    <View>
-      <View style={styles.pageIntro}>
-        <Text style={[styles.pageHeading, { color: colors.foreground }]}>Fees paid</Text>
-        <Text style={[styles.pageSubheading, { color: colors.mutedForeground }]}>Payment history · Semester V</Text>
-      </View>
-      <View style={[styles.feesSummary, { backgroundColor: colors.primary }]}>
-        <Text style={styles.feesKicker}>TOTAL PAID · THIS SEMESTER</Text>
-        <Text style={styles.feesValue}>₹ 59,700</Text>
-        <View style={styles.feesSummaryBottom}>
-          <MaterialCommunityIcons name="check-circle-outline" size={16} color={colors.accent} />
-          <Text style={styles.feesSummaryText}>All listed payments complete</Text>
-        </View>
-      </View>
-      <View style={styles.feeList}>
+    <View style={styles.feeList}>
         {feeRows.map((row) => (
-          <View key={row.label} style={[styles.feeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={[styles.feeIcon, { backgroundColor: colors.secondary }]}>
-              <MaterialCommunityIcons name="receipt-text-outline" size={20} color={colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.feeTitle, { color: colors.foreground }]}>{row.label}</Text>
-              <Text style={[styles.feeDate, { color: colors.mutedForeground }]}>{row.date} · {row.status.toUpperCase()}</Text>
-            </View>
-            <Text style={[styles.feeAmount, { color: colors.foreground }]}>{row.amount}</Text>
+          <View key={row.receipt} style={[styles.feeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <FeeRow label="Session" value={row.session} colors={colors} />
+            <FeeRow label="Amount" value={row.amount} colors={colors} />
+            <FeeRow label="Receipt No" value={row.receipt} colors={colors} />
+            <FeeRow label="Date" value={row.date} colors={colors} />
+            <FeeRow label="Fees Type" value={row.type} colors={colors} />
+            <FeeRow label="Semester Name" value={row.semester} colors={colors} />
           </View>
         ))}
-      </View>
-      <DemoDataCallout colors={colors} text="Payment records are sample information. Check official receipts for confirmed balances." />
+    </View>
+  );
+}
+
+function FeeRow({ label, value, colors }: { label: string; value: string; colors: ReturnType<typeof useColors> }) {
+  return (
+    <View style={styles.feeRow}>
+      <Text style={[styles.feeRowLabel, { color: colors.foreground }]}>{label}</Text>
+      <Text style={[styles.feeRowValue, { color: colors.mutedForeground }]}>{value}</Text>
     </View>
   );
 }
@@ -800,77 +850,100 @@ function ScheduleScreen({
   colors,
   activeDay,
   setActiveDay,
+  dayMenuOpen,
+  setDayMenuOpen,
 }: {
   colors: ReturnType<typeof useColors>;
   activeDay: string;
   setActiveDay: (day: string) => void;
+  dayMenuOpen: boolean;
+  setDayMenuOpen: (open: boolean) => void;
 }) {
+  const dayNames: Record<string, string> = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday' };
   return (
-    <View>
-      <View style={styles.pageIntro}>
-        <Text style={[styles.pageHeading, { color: colors.foreground }]}>Class schedule</Text>
-        <Text style={[styles.pageSubheading, { color: colors.mutedForeground }]}>Your weekly timetable · Semester V</Text>
-      </View>
-      <View style={styles.dayPicker}>
-        {Object.keys(scheduleByDay).map((day) => (
-          <Pressable
-            key={day}
-            onPress={() => setActiveDay(day)}
-            accessibilityRole="button"
-            accessibilityState={{ selected: activeDay === day }}
-            style={({ pressed }) => [
-              styles.dayButton,
-              { backgroundColor: activeDay === day ? colors.primary : colors.card, borderColor: activeDay === day ? colors.primary : colors.border, opacity: pressed ? 0.75 : 1 },
-            ]}
-          >
-            <Text style={[styles.dayButtonText, { color: activeDay === day ? colors.primaryForeground : colors.mutedForeground }]}>{day}</Text>
-          </Pressable>
-        ))}
-      </View>
-      <View style={styles.timeline}>
+    <View style={styles.scheduleScreen}>
+      <Pressable onPress={() => setDayMenuOpen(!dayMenuOpen)} accessibilityRole="button" accessibilityState={{ expanded: dayMenuOpen }} accessibilityLabel={`Selected day: ${dayNames[activeDay]}`} testID="schedule-day-picker" style={styles.scheduleDayPicker}>
+        <Text style={[styles.scheduleDayText, { color: colors.foreground }]}>{dayNames[activeDay]}</Text>
+        <MaterialCommunityIcons name="menu-down" size={23} color={colors.mutedForeground} />
+      </Pressable>
+      {dayMenuOpen ? (
+        <View style={[styles.scheduleDayMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          {Object.keys(scheduleByDay).map((day) => (
+            <Pressable key={day} onPress={() => { setActiveDay(day); setDayMenuOpen(false); }} accessibilityRole="button" accessibilityState={{ selected: activeDay === day }} style={styles.scheduleDayOption}>
+              <Text style={[styles.scheduleDayText, { color: colors.foreground }]}>{dayNames[day]}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+      <View style={styles.scheduleCards}>
         {(scheduleByDay[activeDay] ?? []).map((item, index) => (
-          <View key={`${activeDay}-${item.code}`} style={styles.timelineEntry}>
-            <View style={styles.timeColumn}>
-              <Text style={[styles.timeText, { color: colors.mutedForeground }]}>{item.time}</Text>
-              <View style={[styles.timelineDot, { backgroundColor: colors.accent }]} />
-              {index < (scheduleByDay[activeDay]?.length ?? 0) - 1 ? <View style={[styles.timelineLine, { backgroundColor: colors.border }]} /> : null}
+          <View key={`${activeDay}-${item.code}-${index}`} style={[styles.scheduleReferenceCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={[styles.scheduleReferenceHeader, { backgroundColor: colors.primary }]}>
+              <MaterialCommunityIcons name="timer-outline" size={23} color="#d3e1e8" />
             </View>
-            <View style={[styles.scheduleCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.scheduleCode, { color: colors.primary }]}>{item.code}</Text>
-              <Text style={[styles.scheduleTitle, { color: colors.foreground }]}>{item.title}</Text>
-              <View style={styles.scheduleMeta}>
-                <MaterialCommunityIcons name="map-marker-outline" size={15} color={colors.mutedForeground} />
-                <Text style={[styles.scheduleMetaText, { color: colors.mutedForeground }]}>{item.room}</Text>
-                <View style={[styles.metaDivider, { backgroundColor: colors.border }]} />
-                <Text numberOfLines={1} style={[styles.scheduleMetaText, { color: colors.mutedForeground, flex: 1 }]}>{item.faculty}</Text>
-              </View>
+            <View style={styles.scheduleReferenceRow}>
+              <Text style={[styles.scheduleReferenceLabel, { color: colors.foreground }]}>Subject Name</Text>
+              <Text style={[styles.scheduleReferenceValue, { color: colors.mutedForeground }]}>{item.code}-{item.title}</Text>
+            </View>
+            <View style={styles.scheduleReferenceRow}>
+              <Text style={[styles.scheduleReferenceLabel, { color: colors.foreground }]}>Faculty Name</Text>
+              <Text style={[styles.scheduleReferenceValue, { color: colors.mutedForeground }]}>{item.faculty}</Text>
             </View>
           </View>
         ))}
       </View>
-      <DemoDataCallout colors={colors} text="Timetable entries are examples. Verify class times with your department." />
     </View>
   );
 }
 
-function PasswordScreen({ colors }: { colors: ReturnType<typeof useColors> }) {
+function PasswordScreen({
+  colors,
+  currentPassword,
+  setCurrentPassword,
+  newPassword,
+  setNewPassword,
+  confirmPassword,
+  setConfirmPassword,
+  message,
+  setMessage,
+}: {
+  colors: ReturnType<typeof useColors>;
+  currentPassword: string;
+  setCurrentPassword: (value: string) => void;
+  newPassword: string;
+  setNewPassword: (value: string) => void;
+  confirmPassword: string;
+  setConfirmPassword: (value: string) => void;
+  message: string;
+  setMessage: (value: string) => void;
+}) {
   return (
-    <View>
-      <View style={styles.pageIntro}>
-        <Text style={[styles.pageHeading, { color: colors.foreground }]}>Change password</Text>
-        <Text style={[styles.pageSubheading, { color: colors.mutedForeground }]}>Keep your student account secure</Text>
+    <View style={styles.passwordScreen}>
+      <View style={styles.passwordFields}>
+        <TextInput value={currentPassword} onChangeText={setCurrentPassword} placeholder="Current Password" placeholderTextColor={colors.mutedForeground} secureTextEntry autoCapitalize="none" style={[styles.passwordInput, { borderBottomColor: colors.mutedForeground, color: colors.foreground }]} accessibilityLabel="Current Password" testID="current-password" />
+        <TextInput value={newPassword} onChangeText={setNewPassword} placeholder="New Password" placeholderTextColor={colors.mutedForeground} secureTextEntry autoCapitalize="none" style={[styles.passwordInput, { borderBottomColor: colors.mutedForeground, color: colors.foreground }]} accessibilityLabel="New Password" testID="new-password" />
+        <TextInput value={confirmPassword} onChangeText={setConfirmPassword} placeholder="Confirm Password" placeholderTextColor={colors.mutedForeground} secureTextEntry autoCapitalize="none" style={[styles.passwordInput, { borderBottomColor: colors.mutedForeground, color: colors.foreground }]} accessibilityLabel="Confirm Password" testID="confirm-password" />
+        <Pressable
+          onPress={() => {
+            if (!currentPassword || !newPassword || !confirmPassword) {
+              setMessage('Please complete all three fields.');
+            } else if (newPassword.length < 8 || !/[A-Z]/.test(newPassword)) {
+              setMessage('Password must contain at least 8 characters and one capital letter.');
+            } else if (newPassword !== confirmPassword) {
+              setMessage('New Password and Confirm Password do not match.');
+            } else {
+              setMessage('Password changes are not connected to the university account in this local app.');
+            }
+          }}
+          accessibilityRole="button"
+          testID="submit-password-change"
+          style={({ pressed }) => [styles.passwordSubmit, { backgroundColor: '#4388af', opacity: pressed ? 0.8 : 1 }]}
+        >
+          <Text style={styles.passwordSubmitText}>Submit</Text>
+        </Pressable>
+        {message ? <Text style={[styles.passwordFeedback, { color: colors.mutedForeground }]}>{message}</Text> : null}
       </View>
-      <View style={[styles.passwordInfo, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={[styles.passwordIcon, { backgroundColor: colors.secondary }]}>
-          <MaterialCommunityIcons name="lock-reset" size={25} color={colors.primary} />
-        </View>
-        <Text style={[styles.passwordTitle, { color: colors.foreground }]}>Use your official student portal</Text>
-        <Text style={[styles.passwordBody, { color: colors.mutedForeground }]}>This diary is a local prototype and does not manage university passwords. To change your password, use the official university account portal or contact the student help desk.</Text>
-        <View style={[styles.passwordNotice, { backgroundColor: colors.accentSoft }]}>
-          <MaterialCommunityIcons name="shield-lock-outline" size={17} color={colors.accentForeground} />
-          <Text style={[styles.passwordNoticeText, { color: colors.accentForeground }]}>Never enter your university password into an unverified app.</Text>
-        </View>
-      </View>
+      <Text style={[styles.passwordRequirement, { color: colors.mutedForeground }]}>Password must contain atleast 8 characters, one Capital</Text>
     </View>
   );
 }
@@ -886,13 +959,15 @@ function DemoDataCallout({ colors, text }: { colors: ReturnType<typeof useColors
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  appShell: { flex: 1, width: '100%', alignSelf: 'center', backgroundColor: 'transparent' },
+  appShell: { flex: 1, width: '100%', alignSelf: 'center', backgroundColor: 'transparent', position: 'relative' },
   loadingScreen: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   loadingText: { fontSize: 14, fontWeight: '500' },
   header: { minHeight: 68, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, gap: 12 },
+  referenceHeader: { height: 60, minHeight: 60, paddingHorizontal: 20, gap: 21 },
   headerIconButton: { width: 38, height: 42, alignItems: 'flex-start', justifyContent: 'center' },
   headerTitleWrap: { flex: 1, justifyContent: 'center' },
   headerTitle: { fontSize: 20, fontWeight: '700', letterSpacing: 0.1 },
+  referenceHeaderTitle: { fontSize: 21, fontWeight: '400', letterSpacing: 0 },
   homeHeader: { gap: 24 },
   homeHeaderTitle: { fontWeight: '600' },
   registrationHeader: { gap: 24, minHeight: 60 },
@@ -903,6 +978,9 @@ const styles = StyleSheet.create({
   body: { flex: 1, flexDirection: 'row' },
   scrollArea: { flex: 1 },
   pageContent: { width: '100%', alignSelf: 'center', paddingTop: 22, paddingBottom: 24 },
+  edgeToEdgePageContent: { paddingTop: 0, paddingHorizontal: 0 },
+  feesPageContent: { paddingTop: 18, paddingBottom: 96, paddingHorizontal: 22 },
+  passwordPageContent: { flexGrow: 1, paddingTop: 16, paddingHorizontal: 5, paddingBottom: 4 },
   homePageContent: { flexGrow: 1, paddingTop: 0, paddingBottom: 26 },
   registrationPageContent: { paddingTop: 0 },
   homeBottomInset: { position: 'absolute', left: 0, right: 0 },
@@ -1070,12 +1148,66 @@ const styles = StyleSheet.create({
   feesValue: { color: '#ffffff', fontSize: 30, fontWeight: '700', marginTop: 7 },
   feesSummaryBottom: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
   feesSummaryText: { color: 'rgba(255,255,255,0.78)', fontSize: 11 },
-  feeList: { gap: 9 },
-  feeCard: { borderWidth: 1, borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
   feeIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   feeTitle: { fontSize: 11, fontWeight: '600', lineHeight: 16 },
   feeDate: { fontSize: 8, fontWeight: '600', letterSpacing: 0.3, marginTop: 4 },
   feeAmount: { fontSize: 11, fontWeight: '700' },
+  studentInfoScreen: { width: '100%' },
+  studentInfoTabs: { flexGrow: 0, minHeight: 54, borderBottomWidth: 1 },
+  studentInfoTabsContent: { flexDirection: 'row' },
+  studentInfoTab: { width: 168, height: 54, paddingHorizontal: 14, alignItems: 'flex-start', justifyContent: 'center' },
+  studentInfoTabText: { fontSize: 14, fontWeight: '400' },
+  studentInfoTabUnderline: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 2 },
+  studentInfoRows: { paddingHorizontal: 10, paddingTop: 8 },
+  studentInfoRow: { flexDirection: 'row', alignItems: 'center', minHeight: 39, paddingVertical: 5 },
+  studentInfoLabel: { width: '51%', fontSize: 18, lineHeight: 22, fontWeight: '700' },
+  studentInfoValue: { flex: 1, fontSize: 16, lineHeight: 21 },
+  feeList: { gap: 14 },
+  feeCard: {
+    borderWidth: 1,
+    borderRadius: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    elevation: 3,
+    shadowColor: '#000000',
+    shadowOpacity: 0.16,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  feeRow: { minHeight: 40, flexDirection: 'row', alignItems: 'center' },
+  feeRowLabel: { width: '50%', fontSize: 17, lineHeight: 22, fontWeight: '700' },
+  feeRowValue: { flex: 1, fontSize: 16, lineHeight: 21 },
+  feesFooter: { position: 'absolute', left: 0, right: 0, minHeight: 70, paddingHorizontal: 18, justifyContent: 'center', alignItems: 'flex-end', zIndex: 3 },
+  feeFeedback: { width: '100%', textAlign: 'right', fontSize: 10, marginBottom: 4 },
+  outstandingButton: { minWidth: 214, minHeight: 43, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
+  outstandingButtonText: { color: '#ffffff', fontSize: 14, fontWeight: '400' },
+  scheduleScreen: { width: '100%' },
+  scheduleDayPicker: { width: '100%', minHeight: 46, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  scheduleDayText: { fontSize: 17, fontWeight: '600' },
+  scheduleDayMenu: { borderWidth: 1, marginHorizontal: 18, marginBottom: 12, elevation: 3, shadowColor: '#000000', shadowOpacity: 0.14, shadowRadius: 3, shadowOffset: { width: 0, height: 2 } },
+  scheduleDayOption: { minHeight: 42, justifyContent: 'center', paddingHorizontal: 12 },
+  scheduleCards: { paddingHorizontal: 18, gap: 14 },
+  scheduleReferenceCard: {
+    borderWidth: 1,
+    borderRadius: 2,
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#000000',
+    shadowOpacity: 0.17,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  scheduleReferenceHeader: { height: 41, alignItems: 'flex-end', justifyContent: 'center', paddingHorizontal: 13 },
+  scheduleReferenceRow: { minHeight: 50, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 6, paddingVertical: 5 },
+  scheduleReferenceLabel: { width: '51%', fontSize: 17, lineHeight: 22, fontWeight: '700' },
+  scheduleReferenceValue: { flex: 1, fontSize: 16, lineHeight: 20 },
+  passwordScreen: { flex: 1, justifyContent: 'space-between' },
+  passwordFields: { width: '100%' },
+  passwordInput: { height: 46, paddingHorizontal: 0, paddingVertical: 7, borderBottomWidth: 1, fontSize: 16, marginBottom: 18 },
+  passwordSubmit: { alignSelf: 'center', width: 98, height: 37, alignItems: 'center', justifyContent: 'center', marginTop: 0, elevation: 2, shadowColor: '#000000', shadowOpacity: 0.16, shadowRadius: 3, shadowOffset: { width: 0, height: 2 } },
+  passwordSubmitText: { color: '#ffffff', fontSize: 16, fontWeight: '400' },
+  passwordFeedback: { textAlign: 'center', fontSize: 12, lineHeight: 17, marginTop: 10 },
+  passwordRequirement: { fontSize: 15, lineHeight: 20, paddingHorizontal: 16, paddingBottom: 4 },
   dayPicker: { flexDirection: 'row', gap: 8, marginBottom: 20 },
   dayButton: { flex: 1, minHeight: 39, borderWidth: 1, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   dayButtonText: { fontSize: 11, fontWeight: '700' },
