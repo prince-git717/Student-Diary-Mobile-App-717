@@ -43,7 +43,7 @@ type Course = {
 };
 
 const STORAGE_KEY = 'student-diary-attendance-v1';
-const DEMO_ATTENDANCE_STORAGE_KEY = 'student-diary-attendance-demo-v2';
+const DEMO_ATTENDANCE_STORAGE_KEY = 'student-diary-attendance-demo-v4';
 const ATTENDANCE_TARGET = 60;
 
 const initialCourses: Course[] = [
@@ -58,15 +58,15 @@ const initialCourses: Course[] = [
 ];
 
 const initialAttendanceCourses: Course[] = [
-  { id: 'networks-mamatha', code: 'BTE26138', title: 'Computer Networks', faculty: 'Mamatha Velayapelli', present: 13, total: 21 },
-  { id: 'networks-sayak', code: 'BTE26138', title: 'Computer Networks', faculty: 'Sayak Mandal', present: 32, total: 50 },
-  { id: 'web-programming', code: 'BTE25464', title: 'Web Programming', faculty: 'Kanak Lata', present: 31, total: 51 },
-  { id: 'graph-theory', code: 'BTE26148', title: 'Professional Elective-I - Graph Theory', faculty: 'Dilip Kumar', present: 35, total: 54 },
-  { id: 'networks-lab', code: 'BTE26151', title: 'Computer Networks Laboratory', faculty: 'Megha Srivastava', present: 19, total: 30 },
-  { id: 'knowledge', code: 'BTE25122', title: 'Essence of Indian Knowledge Tradition', faculty: 'Monika Singh', present: 19, total: 29 },
-  { id: 'signals', code: 'BTE25112', title: 'Signals and Systems', faculty: 'Prem Nath Suman', present: 28, total: 46 },
-  { id: 'signals-lab', code: 'BTE25466', title: 'Signal & System Laboratory', faculty: 'Mihir Kumar Mahakud', present: 14, total: 22 },
-  { id: 'software-project', code: 'BTE25558', title: 'Professional Elective - II - Software Project Management', faculty: 'Faculty name cropped in screenshot', present: 40, total: 59 },
+  { id: 'networks-mamatha', code: 'BTE26138', title: 'Computer Networks', faculty: 'Mamatha Velayapelli', present: 6, total: 20 },
+  { id: 'networks-sayak', code: 'BTE26138', title: 'Computer Networks', faculty: 'Sayak Mandal', present: 8, total: 20 },
+  { id: 'web-programming', code: 'BTE25464', title: 'Web Programming', faculty: 'Kanak Lata', present: 21, total: 50 },
+  { id: 'graph-theory', code: 'BTE26148', title: 'Professional Elective-I - Graph Theory', faculty: 'Dilip Kumar', present: 25, total: 50 },
+  { id: 'networks-lab', code: 'BTE26151', title: 'Computer Networks Laboratory', faculty: 'Megha Srivastava', present: 9, total: 20 },
+  { id: 'knowledge', code: 'BTE25122', title: 'Essence of Indian Knowledge Tradition', faculty: 'Monika Singh', present: 11, total: 20 },
+  { id: 'signals', code: 'BTE25112', title: 'Signals and Systems', faculty: 'Prem Nath Suman', present: 22, total: 50 },
+  { id: 'signals-lab', code: 'BTE25466', title: 'Signal & System Laboratory', faculty: 'Mihir Kumar Mahakud', present: 28, total: 50 },
+  { id: 'software-project', code: 'BTE25558', title: 'Professional Elective - II - Software Project Management', faculty: 'Faculty name cropped in screenshot', present: 26, total: 50 },
 ];
 
 const menuItems: Array<{ key: ScreenKey; label: string; icon: IconName }> = [
@@ -80,6 +80,18 @@ const menuItems: Array<{ key: ScreenKey; label: string; icon: IconName }> = [
   { key: 'schedule', label: 'Class schedule', icon: 'calendar-month-outline' },
   { key: 'password', label: 'Change password', icon: 'lock-reset' },
 ];
+
+const drawerLabels: Record<ScreenKey, string> = {
+  home: 'Home',
+  attendance: 'Attendance',
+  notices: 'Notice',
+  registration: 'Exam Registration Status',
+  results: 'Result',
+  information: 'My Information',
+  fees: 'Fees Paid',
+  schedule: 'Class Schedule',
+  password: 'Change Password',
+};
 
 const notices = [
   { date: 'OCT 06', tag: 'ACADEMIC', title: 'Mid-semester examination timetable', body: 'The draft timetable for semester V is available. Review your subjects and check the notice board for room updates.' },
@@ -130,12 +142,14 @@ function ProgressRing({
   colors,
   progressColor,
   trackColor,
+  startAngle = 135,
 }: {
   percentage: number;
   size?: number;
   colors: ReturnType<typeof useColors>;
   progressColor?: string;
   trackColor?: string;
+  startAngle?: number;
 }) {
   const stroke = progressColor ? 5 : 7;
   const radius = (size - stroke) / 2;
@@ -154,11 +168,12 @@ function ProgressRing({
           strokeDasharray={`${circumference} ${circumference}`}
           strokeDashoffset={offset}
           strokeLinecap="round"
+          transform={`rotate(${startAngle} ${size / 2} ${size / 2})`}
           fill="none"
         />
       </Svg>
       <View style={styles.ringLabel}>
-        <Text style={[styles.ringNumber, { color: colors.foreground, fontSize: size >= 90 ? 30 : 21 }]}>{percentage}</Text>
+        <Text style={[styles.ringNumber, { color: colors.mutedForeground, fontSize: size >= 90 ? 32 : 21 }]}>{percentage}</Text>
         <Text style={[styles.ringPercent, { color: colors.mutedForeground, fontSize: size >= 90 ? 12 : 10 }]}>%</Text>
       </View>
     </View>
@@ -342,15 +357,15 @@ export default function StudentDiaryScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: screen === 'home' || screen === 'registration' || isReferenceScreen ? colors.primary : colors.background }]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: screen === 'home' || screen === 'attendance' || screen === 'registration' || isReferenceScreen ? colors.primary : colors.background }]} edges={['top', 'bottom']}>
       <StatusBar style="light" />
       <View
         style={[
           styles.appShell,
-          { maxWidth: isWide ? 1180 : 760, paddingTop: Platform.OS === 'web' ? (isReferenceScreen ? 55 : 67) : 0, paddingBottom: Platform.OS === 'web' ? 34 : 0, backgroundColor: screen === 'home' || screen === 'registration' || isReferenceScreen ? colors.primary : 'transparent' },
+          { maxWidth: isWide ? 1180 : 760, paddingTop: Platform.OS === 'web' ? (isReferenceScreen || screen === 'attendance' ? 55 : 67) : 0, paddingBottom: Platform.OS === 'web' ? 34 : 0, backgroundColor: screen === 'home' || screen === 'attendance' || screen === 'registration' || isReferenceScreen ? colors.primary : 'transparent' },
         ]}
       >
-        <View style={[styles.header, screen === 'home' && styles.homeHeader, screen === 'registration' && styles.registrationHeader, ['information', 'fees', 'schedule', 'password'].includes(screen) && styles.referenceHeader, { backgroundColor: colors.primary }]}>
+        <View style={[styles.header, screen === 'home' && styles.homeHeader, screen === 'attendance' && styles.attendanceHeader, screen === 'registration' && styles.registrationHeader, ['information', 'fees', 'schedule', 'password'].includes(screen) && styles.referenceHeader, { backgroundColor: colors.primary }]}>
           <Pressable
             onPress={() => screen === 'registration' ? navigate('home') : screen === 'information' ? navigate(informationReturnScreen) : setDrawerOpen(true)}
             accessibilityLabel={screen === 'registration' || screen === 'information' ? 'Go back' : 'Open navigation menu'}
@@ -391,11 +406,13 @@ export default function StudentDiaryScreen() {
             style={[
               styles.scrollArea,
               screen === 'home' && { backgroundColor: colors.card },
+              screen === 'attendance' && { backgroundColor: colors.background },
               (screen === 'registration' || isReferenceScreen) && { backgroundColor: colors.background },
             ]}
             contentContainerStyle={[
               styles.pageContent,
               { maxWidth: screen === 'home' ? 460 : isWide ? 900 : 740, paddingHorizontal: screen === 'home' ? 23 : isTablet ? 28 : 18 },
+              screen === 'attendance' && !isTablet && styles.attendancePageContent,
               screen === 'home' && styles.homePageContent,
               screen === 'registration' && styles.registrationPageContent,
               ['information', 'schedule'].includes(screen) && styles.edgeToEdgePageContent,
@@ -441,33 +458,38 @@ export default function StudentDiaryScreen() {
         <Modal visible={drawerOpen} animationType="fade" transparent onRequestClose={() => setDrawerOpen(false)}>
           <View style={styles.drawerOverlay}>
             <Pressable style={styles.drawerScrim} onPress={() => setDrawerOpen(false)} accessibilityLabel="Close menu" />
-            <View style={[styles.drawer, { backgroundColor: colors.card, width: Math.min(width * 0.84, 350) }]}>
-              <View style={[styles.drawerProfile, { backgroundColor: colors.primary }]}>
+            <View style={[styles.drawer, { backgroundColor: colors.card, width: Math.min(width * 0.78, 356) }]}>
+              <View style={[styles.drawerProfile, { backgroundColor: colors.card }]}>
                 <View style={styles.drawerTopLine}>
-                  <View style={[styles.avatarLarge, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
-                    <Text style={[styles.avatarInitials, { color: colors.primaryForeground }]}>PR</Text>
-                  </View>
-                  <Pressable onPress={() => setDrawerOpen(false)} accessibilityLabel="Close navigation menu" style={styles.closeDrawerButton}>
-                    <MaterialCommunityIcons name="close" size={23} color={colors.primaryForeground} />
+                  <Image
+                    source={require('../assets/images/student-profile.png')}
+                    accessibilityLabel="Student portrait"
+                    style={[styles.drawerPhoto, { borderColor: colors.foreground }]}
+                  />
+                  <Pressable onPress={() => setDrawerOpen(false)} accessibilityLabel="Close navigation menu" accessibilityRole="button" testID="close-navigation-menu" style={styles.closeDrawerButton}>
+                    <MaterialCommunityIcons name="power" size={27} color={colors.mutedForeground} />
                   </Pressable>
                 </View>
-                <Text style={[styles.drawerName, { color: colors.primaryForeground }]}>Prince Raj</Text>
-                <Text style={styles.drawerId}>AJU/241355 · Semester V</Text>
+                <Text style={[styles.drawerName, { color: colors.foreground }]}>PRINCE RAJ</Text>
               </View>
               <ScrollView contentContainerStyle={styles.drawerList}>
                 {menuItems.map((item) => (
-                  <NavItem key={item.key} item={item} selected={screen === item.key} onPress={() => navigate(item.key)} colors={colors} />
+                  <NavItem
+                    key={item.key}
+                    item={item}
+                    labelOverride={drawerLabels[item.key]}
+                    selected={false}
+                    drawerItem
+                    onPress={() => navigate(item.key)}
+                    colors={colors}
+                  />
                 ))}
               </ScrollView>
-              <View style={[styles.drawerFooter, { borderTopColor: colors.border }]}>
-                <MaterialCommunityIcons name="shield-check-outline" size={17} color={colors.mutedForeground} />
-                <Text style={[styles.drawerFooterText, { color: colors.mutedForeground }]}>Attendance data stays on this device</Text>
-              </View>
             </View>
           </View>
         </Modal>
       ) : null}
-      {screen === 'home' || screen === 'registration' || isReferenceScreen ? (
+      {screen === 'home' || screen === 'attendance' || screen === 'registration' || isReferenceScreen ? (
         <View
           style={[
             styles.homeBottomInset,
@@ -485,16 +507,20 @@ export default function StudentDiaryScreen() {
 
 function NavItem({
   item,
+  labelOverride,
   selected,
   onPress,
   colors,
   compact = false,
+  drawerItem = false,
 }: {
   item: (typeof menuItems)[number];
+  labelOverride?: string;
   selected: boolean;
   onPress: () => void;
   colors: ReturnType<typeof useColors>;
   compact?: boolean;
+  drawerItem?: boolean;
 }) {
   return (
     <Pressable
@@ -505,11 +531,12 @@ function NavItem({
       style={({ pressed }) => [
         styles.navItem,
         compact && styles.navItemCompact,
+        drawerItem && styles.drawerNavItem,
         { backgroundColor: selected ? colors.secondary : 'transparent', opacity: pressed ? 0.72 : 1 },
       ]}
     >
-      <MaterialCommunityIcons name={item.icon} size={21} color={selected ? colors.primary : colors.mutedForeground} />
-      <Text style={[styles.navLabel, { color: selected ? colors.primary : colors.foreground, fontWeight: selected ? '700' : '500' }]}>{item.label}</Text>
+      <MaterialCommunityIcons name={item.icon} size={drawerItem ? 26 : 21} color={selected ? colors.primary : colors.mutedForeground} />
+      <Text style={[styles.navLabel, drawerItem && styles.drawerNavLabel, { color: selected ? colors.primary : colors.foreground, fontWeight: selected ? '700' : '500' }]}>{labelOverride ?? item.label}</Text>
       {selected ? <View style={[styles.navSelectedMark, { backgroundColor: colors.accent }]} /> : null}
     </Pressable>
   );
@@ -587,11 +614,12 @@ function AttendanceScreen({
                   <View style={styles.courseRingWrap}>
                     <ProgressRing
                       percentage={percentage}
-                      size={98}
+                      size={112}
                       colors={colors}
                       progressColor={colors.primary}
                       trackColor={colors.ringTrack}
                     />
+                    <Text numberOfLines={1} style={[styles.courseCodeUnderRing, { color: colors.mutedForeground, backgroundColor: colors.card }]}>{course.code}</Text>
                   </View>
                   <View style={styles.courseStats}>
                     <StatRow label="Total" value={String(course.total)} colors={colors} />
@@ -963,6 +991,7 @@ const styles = StyleSheet.create({
   loadingScreen: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   loadingText: { fontSize: 14, fontWeight: '500' },
   header: { minHeight: 68, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, gap: 12 },
+  attendanceHeader: { height: 60, minHeight: 60, paddingHorizontal: 20, gap: 22 },
   referenceHeader: { height: 60, minHeight: 60, paddingHorizontal: 20, gap: 21 },
   headerIconButton: { width: 38, height: 42, alignItems: 'flex-start', justifyContent: 'center' },
   headerTitleWrap: { flex: 1, justifyContent: 'center' },
@@ -978,6 +1007,7 @@ const styles = StyleSheet.create({
   body: { flex: 1, flexDirection: 'row' },
   scrollArea: { flex: 1 },
   pageContent: { width: '100%', alignSelf: 'center', paddingTop: 22, paddingBottom: 24 },
+  attendancePageContent: { paddingTop: 12, paddingHorizontal: 12 },
   edgeToEdgePageContent: { paddingTop: 0, paddingHorizontal: 0 },
   feesPageContent: { paddingTop: 18, paddingBottom: 96, paddingHorizontal: 22 },
   passwordPageContent: { flexGrow: 1, paddingTop: 16, paddingHorizontal: 5, paddingBottom: 4 },
@@ -1001,6 +1031,8 @@ const styles = StyleSheet.create({
   navItem: { minHeight: 48, paddingHorizontal: 14, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 4, position: 'relative' },
   navItemCompact: { minHeight: 44, paddingHorizontal: 11, gap: 11 },
   navLabel: { fontSize: 14, flex: 1 },
+  drawerNavItem: { minHeight: 53, paddingHorizontal: 14, borderRadius: 0, gap: 36, marginBottom: 0 },
+  drawerNavLabel: { fontSize: 16 },
   navSelectedMark: { position: 'absolute', right: 9, width: 5, height: 5, borderRadius: 3 },
   welcomeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 14 },
   eyebrow: { fontSize: 10, fontWeight: '700', letterSpacing: 1.2, marginBottom: 6 },
@@ -1014,8 +1046,8 @@ const styles = StyleSheet.create({
   heroValue: { color: '#ffffff', fontSize: 40, lineHeight: 47, fontWeight: '700', marginTop: 5 },
   heroPercent: { fontSize: 21, fontWeight: '500' },
   ringLabel: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center' },
-  ringNumber: { fontSize: 21, fontWeight: '700' },
-  ringPercent: { fontSize: 10, marginTop: 3, marginLeft: 1 },
+  ringNumber: { fontSize: 21, fontWeight: '400' },
+  ringPercent: { fontSize: 13, marginTop: 3, marginLeft: 1 },
   heroDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.16)', marginTop: 17, marginBottom: 13 },
   heroBottomLine: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   heroMetric: { flex: 1 },
@@ -1066,9 +1098,9 @@ const styles = StyleSheet.create({
   registrationHeaderCell: { minHeight: 47 },
   registrationTableHeaderText: { fontSize: 16, lineHeight: 20, textAlign: 'center' },
   registrationTableText: { fontSize: 16, lineHeight: 19, textAlign: 'center' },
-  attendanceStudentHeading: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 13 },
-  attendanceStudentName: { fontSize: 15, fontWeight: '800', letterSpacing: 0.1 },
-  attendanceStudentProgram: { fontSize: 13, marginTop: 4 },
+  attendanceStudentHeading: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14, marginHorizontal: -8 },
+  attendanceStudentName: { fontSize: 16, fontWeight: '800', letterSpacing: 0.1 },
+  attendanceStudentProgram: { fontSize: 16, marginTop: 3 },
   attendanceSummary: { borderWidth: 1, borderRadius: 17, padding: 15, flexDirection: 'row', alignItems: 'center', gap: 15 },
   summaryDetails: { flex: 1 },
   summaryTitle: { fontSize: 14, fontWeight: '700' },
@@ -1081,21 +1113,22 @@ const styles = StyleSheet.create({
   attendanceNoteText: { fontSize: 11, lineHeight: 16, flex: 1 },
   courseList: { gap: 13 },
   courseListWide: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start' },
-  courseCard: { borderWidth: 1, borderRadius: 4, overflow: 'hidden', width: '100%' },
+  courseCard: { borderWidth: 1, borderRadius: 3, overflow: 'hidden', width: '100%', elevation: 2, shadowColor: '#000000', shadowOpacity: 0.12, shadowRadius: 3, shadowOffset: { width: 0, height: 2 } },
   courseCardWide: { width: '48.7%' },
   courseCardPress: {},
   courseCardHeader: { minHeight: 36, paddingVertical: 7, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center' },
-  courseHeaderTitle: { color: '#ffffff', textAlign: 'center', fontSize: 14, lineHeight: 18, fontWeight: '500' },
-  courseCardBody: { minHeight: 115, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 7, gap: 10 },
-  courseRingWrap: { width: 102, height: 102, alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  courseStats: { flex: 1, gap: 10 },
+  courseHeaderTitle: { color: '#ffffff', textAlign: 'center', fontSize: 16, lineHeight: 20, fontWeight: '500' },
+  courseCardBody: { minHeight: 122, flexDirection: 'row', alignItems: 'center', paddingLeft: 17, paddingRight: 14, paddingVertical: 5 },
+  courseRingWrap: { width: 112, height: 112, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  courseCodeUnderRing: { position: 'absolute', bottom: 3, zIndex: 2, backgroundColor: '#ffffff', paddingHorizontal: 3, borderRadius: 2, fontSize: 15, lineHeight: 18 },
+  courseStats: { flex: 1, maxWidth: 180, marginLeft: 22, gap: 12 },
   statRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  statLabel: { fontSize: 14 },
-  statValue: { fontSize: 14, minWidth: 24, textAlign: 'right' },
-  attendanceArrow: { width: 23, height: 23, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  facultyRow: { borderTopWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 37, paddingHorizontal: 8 },
-  facultyLabel: { fontSize: 14 },
-  facultyName: { fontSize: 14, flex: 1 },
+  statLabel: { fontSize: 17 },
+  statValue: { fontSize: 17, minWidth: 24, textAlign: 'right' },
+  attendanceArrow: { width: 23, height: 23, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginLeft: 'auto' },
+  facultyRow: { borderTopWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 20, minHeight: 38, paddingHorizontal: 5 },
+  facultyLabel: { fontSize: 18 },
+  facultyName: { fontSize: 18, flex: 1 },
   recordActions: { borderTopWidth: 1, padding: 12 },
   recordPrompt: { fontSize: 11, marginBottom: 9 },
   recordButtons: { flexDirection: 'row', gap: 8 },
@@ -1235,12 +1268,10 @@ const styles = StyleSheet.create({
   drawerOverlay: { flex: 1, flexDirection: 'row', backgroundColor: 'rgba(7,25,39,0.48)' },
   drawerScrim: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 },
   drawer: { height: '100%', maxWidth: '88%', elevation: 12 },
-  drawerProfile: { paddingHorizontal: 20, paddingTop: 26, paddingBottom: 19 },
+  drawerProfile: { paddingTop: Platform.OS === 'web' ? 60 : 5, paddingBottom: 12, paddingLeft: 22, paddingRight: 19 },
+  drawerPhoto: { width: 100, height: 100, borderRadius: 50, borderWidth: 1 },
   drawerTopLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   closeDrawerButton: { width: 35, height: 35, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  drawerName: { fontSize: 16, fontWeight: '700', marginTop: 12 },
-  drawerId: { color: 'rgba(255,255,255,0.68)', fontSize: 11, marginTop: 4 },
-  drawerList: { padding: 12, paddingTop: 14 },
-  drawerFooter: { minHeight: 47, borderTopWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 17 },
-  drawerFooterText: { fontSize: 9, flex: 1 },
+  drawerName: { fontSize: 16, fontWeight: '700', marginTop: 18, marginLeft: 4, textAlign: 'left', alignSelf: 'flex-start' },
+  drawerList: { paddingHorizontal: 4, paddingTop: 7, paddingBottom: 14 },
 });
