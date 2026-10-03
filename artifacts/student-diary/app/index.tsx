@@ -31,6 +31,8 @@ type ScreenKey =
   | 'schedule'
   | 'password';
 
+type AppScreenKey = ScreenKey | 'attendanceDetail';
+
 type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 type Course = {
@@ -43,7 +45,7 @@ type Course = {
 };
 
 const STORAGE_KEY = 'student-diary-attendance-v1';
-const DEMO_ATTENDANCE_STORAGE_KEY = 'student-diary-attendance-demo-v4';
+const DEMO_ATTENDANCE_STORAGE_KEY = 'student-diary-attendance-demo-v5';
 const ATTENDANCE_TARGET = 60;
 
 const initialCourses: Course[] = [
@@ -58,16 +60,75 @@ const initialCourses: Course[] = [
 ];
 
 const initialAttendanceCourses: Course[] = [
-  { id: 'networks-mamatha', code: 'BTE26138', title: 'Computer Networks', faculty: 'Mamatha Velayapelli', present: 6, total: 20 },
-  { id: 'networks-sayak', code: 'BTE26138', title: 'Computer Networks', faculty: 'Sayak Mandal', present: 8, total: 20 },
-  { id: 'web-programming', code: 'BTE25464', title: 'Web Programming', faculty: 'Kanak Lata', present: 21, total: 50 },
-  { id: 'graph-theory', code: 'BTE26148', title: 'Professional Elective-I - Graph Theory', faculty: 'Dilip Kumar', present: 25, total: 50 },
-  { id: 'networks-lab', code: 'BTE26151', title: 'Computer Networks Laboratory', faculty: 'Megha Srivastava', present: 9, total: 20 },
-  { id: 'knowledge', code: 'BTE25122', title: 'Essence of Indian Knowledge Tradition', faculty: 'Monika Singh', present: 11, total: 20 },
-  { id: 'signals', code: 'BTE25112', title: 'Signals and Systems', faculty: 'Prem Nath Suman', present: 22, total: 50 },
-  { id: 'signals-lab', code: 'BTE25466', title: 'Signal & System Laboratory', faculty: 'Mihir Kumar Mahakud', present: 28, total: 50 },
-  { id: 'software-project', code: 'BTE25558', title: 'Professional Elective - II - Software Project Management', faculty: 'Faculty name cropped in screenshot', present: 26, total: 50 },
+  { id: 'networks-mamatha', code: 'BTE26138', title: 'Computer Networks', faculty: 'Mamatha Velayapelli', present: 4, total: 20 },
+  { id: 'networks-sayak', code: 'BTE26138', title: 'Computer Networks', faculty: 'Sayak Mandal', present: 4, total: 20 },
+  { id: 'web-programming', code: 'BTE25464', title: 'Web Programming', faculty: 'Kanak Lata', present: 26, total: 50 },
+  { id: 'graph-theory', code: 'BTE26148', title: 'Professional Elective-I - Graph Theory', faculty: 'Dilip Kumar', present: 29, total: 50 },
+  { id: 'networks-lab', code: 'BTE26151', title: 'Computer Networks Laboratory', faculty: 'Megha Srivastava', present: 10, total: 20 },
+  { id: 'knowledge', code: 'BTE25122', title: 'Essence of Indian Knowledge Tradition', faculty: 'Monika Singh', present: 12, total: 25 },
+  { id: 'signals', code: 'BTE25112', title: 'Signals and Systems', faculty: 'Prem Nath Suman', present: 23, total: 49 },
+  { id: 'signals-lab', code: 'BTE25466', title: 'Signal & System Laboratory', faculty: 'Mihir Kumar Mahakud', present: 26, total: 49 },
+  { id: 'software-project', code: 'BTE25558', title: 'Professional Elective - II - Software Project Management', faculty: 'Shuvadip Mandal', present: 20, total: 50 },
 ];
+
+const sampleAttendanceHistory = [
+  { date: '06-07-2026', period: '5' },
+  { date: '06-07-2026', period: '10' },
+  { date: '07-07-2026', period: '5' },
+  { date: '08-07-2026', period: '5' },
+  { date: '13-07-2026', period: '5' },
+  { date: '13-07-2026', period: '10' },
+  { date: '14-07-2026', period: '5' },
+  { date: '15-07-2026', period: '5' },
+  { date: '17-07-2026', period: '5' },
+  { date: '20-07-2026', period: '5' },
+  { date: '21-07-2026', period: '5' },
+  { date: '22-07-2026', period: '5' },
+  { date: '24-07-2026', period: '7' },
+  { date: '27-07-2026', period: '10' },
+  { date: '27-07-2026', period: '7' },
+  { date: '28-07-2026', period: '10' },
+  { date: '29-07-2026', period: '5' },
+  { date: '31-07-2026', period: '5' },
+  { date: '31-07-2026', period: '7' },
+  { date: '31-07-2026', period: '10' },
+  { date: '03-08-2026', period: '5' },
+];
+
+type AttendanceRecord = {
+  serialNumber: number;
+  date: string;
+  period: string;
+  present: boolean;
+};
+
+function getAttendanceRecords(course: Course): AttendanceRecord[] {
+  return Array.from({ length: course.total }, (_, index) => {
+    const extraIndex = index - sampleAttendanceHistory.length;
+    let date = sampleAttendanceHistory[index]?.date;
+    let period = sampleAttendanceHistory[index]?.period;
+
+    if (!date || !period) {
+      const classDate = new Date(Date.UTC(2026, 7, 4));
+      const extraClassDay = Math.floor(extraIndex / 2);
+      let weekdaysAdvanced = 0;
+      while (weekdaysAdvanced < extraClassDay) {
+        classDate.setUTCDate(classDate.getUTCDate() + 1);
+        const day = classDate.getUTCDay();
+        if (day !== 0 && day !== 6) weekdaysAdvanced += 1;
+      }
+      date = `${String(classDate.getUTCDate()).padStart(2, '0')}-${String(classDate.getUTCMonth() + 1).padStart(2, '0')}-${classDate.getUTCFullYear()}`;
+      period = ['5', '10', '7'][extraIndex % 3];
+    }
+
+    const present =
+      course.total > 0 &&
+      Math.floor(((index + 1) * course.present) / course.total) >
+        Math.floor((index * course.present) / course.total);
+
+    return { serialNumber: index + 1, date, period, present };
+  });
+}
 
 const menuItems: Array<{ key: ScreenKey; label: string; icon: IconName }> = [
   { key: 'home', label: 'Home', icon: 'home-outline' },
@@ -235,10 +296,11 @@ export default function StudentDiaryScreen() {
   const isWide = width >= 820;
   const isTablet = width >= 620;
 
-  const [screen, setScreen] = useState<ScreenKey>('home');
+  const [screen, setScreen] = useState<AppScreenKey>('home');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [courses, setCourses] = useState<Course[]>(initialCourses);
   const [attendanceCourses, setAttendanceCourses] = useState<Course[]>(initialAttendanceCourses);
+  const [selectedAttendanceCourse, setSelectedAttendanceCourse] = useState<Course | null>(null);
   const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
   const [activeDay, setActiveDay] = useState('Fri');
   const [dayMenuOpen, setDayMenuOpen] = useState(false);
@@ -250,6 +312,7 @@ export default function StudentDiaryScreen() {
   const [passwordMessage, setPasswordMessage] = useState('');
   const [feeMessage, setFeeMessage] = useState('');
   const isReferenceScreen = ['information', 'fees', 'schedule', 'password'].includes(screen);
+  const isAttendanceDetail = screen === 'attendanceDetail';
   const [ready, setReady] = useState(false);
   const [attendanceReady, setAttendanceReady] = useState(false);
 
@@ -317,18 +380,20 @@ export default function StudentDiaryScreen() {
     }
   }, [attendanceCourses, attendanceReady]);
 
-  const pageTitle = screen === 'information'
-    ? 'Student Information'
-    : screen === 'fees'
-      ? 'Fees Paid'
-      : screen === 'schedule'
-        ? 'Class Schedule'
-        : screen === 'password'
-          ? 'Change Password'
-          : menuItems.find((item) => item.key === screen)?.label ?? 'Student Diary';
+  const pageTitle = screen === 'attendanceDetail'
+    ? 'Attendance in Detail'
+    : screen === 'information'
+      ? 'Student Information'
+      : screen === 'fees'
+        ? 'Fees Paid'
+        : screen === 'schedule'
+          ? 'Class Schedule'
+          : screen === 'password'
+            ? 'Change Password'
+            : menuItems.find((item) => item.key === screen)?.label ?? 'Student Diary';
 
   const navigate = (key: ScreenKey) => {
-    if (key === 'information') setInformationReturnScreen(screen);
+    if (key === 'information') setInformationReturnScreen(screen === 'attendanceDetail' ? 'attendance' : screen);
     setScreen(key);
     setDrawerOpen(false);
     setExpandedCourse(null);
@@ -357,29 +422,29 @@ export default function StudentDiaryScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: screen === 'home' || screen === 'attendance' || screen === 'registration' || isReferenceScreen ? colors.primary : colors.background }]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: screen === 'home' || screen === 'attendance' || screen === 'registration' || isReferenceScreen || isAttendanceDetail ? colors.primary : colors.background }]} edges={['top', 'bottom']}>
       <StatusBar style="light" />
       <View
         style={[
           styles.appShell,
-          { maxWidth: isWide ? 1180 : 760, paddingTop: Platform.OS === 'web' ? (isReferenceScreen || screen === 'attendance' ? 55 : 67) : 0, paddingBottom: Platform.OS === 'web' ? 34 : 0, backgroundColor: screen === 'home' || screen === 'attendance' || screen === 'registration' || isReferenceScreen ? colors.primary : 'transparent' },
+          { maxWidth: isWide ? 1180 : 760, paddingTop: Platform.OS === 'web' ? (isAttendanceDetail ? 0 : isReferenceScreen || screen === 'attendance' ? 55 : 67) : 0, paddingBottom: Platform.OS === 'web' ? 34 : 0, backgroundColor: screen === 'home' || screen === 'attendance' || screen === 'registration' || isReferenceScreen || isAttendanceDetail ? colors.primary : 'transparent' },
         ]}
       >
-        <View style={[styles.header, screen === 'home' && styles.homeHeader, screen === 'attendance' && styles.attendanceHeader, screen === 'registration' && styles.registrationHeader, ['information', 'fees', 'schedule', 'password'].includes(screen) && styles.referenceHeader, { backgroundColor: colors.primary }]}>
+        <View style={[styles.header, screen === 'home' && styles.homeHeader, screen === 'attendance' && styles.attendanceHeader, screen === 'registration' && styles.registrationHeader, ['information', 'fees', 'schedule', 'password'].includes(screen) && styles.referenceHeader, isAttendanceDetail && (Platform.OS === 'web' ? styles.attendanceDetailHeaderWeb : styles.attendanceDetailHeaderNative), { backgroundColor: colors.primary }]}>
           <Pressable
-            onPress={() => screen === 'registration' ? navigate('home') : screen === 'information' ? navigate(informationReturnScreen) : setDrawerOpen(true)}
-            accessibilityLabel={screen === 'registration' || screen === 'information' ? 'Go back' : 'Open navigation menu'}
+            onPress={() => screen === 'registration' ? navigate('home') : screen === 'information' ? navigate(informationReturnScreen) : isAttendanceDetail ? navigate('attendance') : setDrawerOpen(true)}
+            accessibilityLabel={screen === 'registration' || screen === 'information' || isAttendanceDetail ? 'Go back' : 'Open navigation menu'}
             accessibilityRole="button"
-            testID={screen === 'registration' ? 'back-from-registration' : screen === 'information' ? 'back-from-information' : 'open-menu'}
+            testID={screen === 'registration' ? 'back-from-registration' : screen === 'information' ? 'back-from-information' : isAttendanceDetail ? 'back-from-attendance-details' : 'open-menu'}
             style={({ pressed }) => [styles.headerIconButton, { opacity: pressed ? 0.7 : 1 }]}
           >
-            <MaterialCommunityIcons name={screen === 'registration' || screen === 'information' ? 'arrow-left' : 'menu'} size={25} color={colors.primaryForeground} />
+            <MaterialCommunityIcons name={screen === 'registration' || screen === 'information' || isAttendanceDetail ? 'arrow-left' : 'menu'} size={25} color={colors.primaryForeground} />
           </Pressable>
           <View style={styles.headerTitleWrap}>
-            <Text numberOfLines={1} style={[styles.headerTitle, screen === 'home' && styles.homeHeaderTitle, screen === 'registration' && styles.registrationHeaderTitle, ['information', 'fees', 'schedule', 'password'].includes(screen) && styles.referenceHeaderTitle, { color: colors.primaryForeground }]}>{screen === 'home' ? 'Student Diary' : screen === 'registration' ? 'Show Exam Register Status' : pageTitle}</Text>
-            {screen !== 'home' && screen !== 'attendance' && screen !== 'registration' && !['information', 'fees', 'schedule', 'password'].includes(screen) ? <Text numberOfLines={1} style={styles.headerSubtitle}>ARKA JAIN University · Jharkhand</Text> : null}
+            <Text numberOfLines={1} style={[styles.headerTitle, screen === 'home' && styles.homeHeaderTitle, screen === 'registration' && styles.registrationHeaderTitle, ['information', 'fees', 'schedule', 'password'].includes(screen) && styles.referenceHeaderTitle, isAttendanceDetail && styles.referenceHeaderTitle, { color: colors.primaryForeground }]}>{screen === 'home' ? 'Student Diary' : screen === 'registration' ? 'Show Exam Register Status' : pageTitle}</Text>
+            {screen !== 'home' && screen !== 'attendance' && screen !== 'registration' && !['information', 'fees', 'schedule', 'password', 'attendanceDetail'].includes(screen) ? <Text numberOfLines={1} style={styles.headerSubtitle}>ARKA JAIN University · Jharkhand</Text> : null}
           </View>
-          {screen !== 'home' && screen !== 'attendance' && screen !== 'registration' && !['information', 'fees', 'schedule', 'password'].includes(screen) ? (
+          {screen !== 'home' && screen !== 'attendance' && screen !== 'registration' && !['information', 'fees', 'schedule', 'password', 'attendanceDetail'].includes(screen) ? (
             <Pressable onPress={() => navigate('information')} accessibilityLabel="Open student profile" accessibilityRole="button" style={styles.headerAvatar}>
               <Text style={[styles.headerAvatarText, { color: colors.primary }]}>PR</Text>
             </Pressable>
@@ -387,7 +452,7 @@ export default function StudentDiaryScreen() {
         </View>
 
         <View style={styles.body}>
-          {isWide && screen !== 'home' ? (
+          {isWide && screen !== 'home' && !isAttendanceDetail ? (
             <View style={[styles.desktopSidebar, { backgroundColor: colors.card, borderRightColor: colors.border }]}>
               <View style={styles.sidebarIdentity}>
                 <View style={[styles.avatarLarge, { backgroundColor: colors.secondary }]}>
@@ -408,11 +473,13 @@ export default function StudentDiaryScreen() {
               screen === 'home' && { backgroundColor: colors.card },
               screen === 'attendance' && { backgroundColor: colors.background },
               (screen === 'registration' || isReferenceScreen) && { backgroundColor: colors.background },
+              isAttendanceDetail && { backgroundColor: colors.card },
             ]}
             contentContainerStyle={[
               styles.pageContent,
               { maxWidth: screen === 'home' ? 460 : isWide ? 900 : 740, paddingHorizontal: screen === 'home' ? 23 : isTablet ? 28 : 18 },
               screen === 'attendance' && !isTablet && styles.attendancePageContent,
+              isAttendanceDetail && styles.attendanceDetailPageContent,
               screen === 'home' && styles.homePageContent,
               screen === 'registration' && styles.registrationPageContent,
               ['information', 'schedule'].includes(screen) && styles.edgeToEdgePageContent,
@@ -432,7 +499,15 @@ export default function StudentDiaryScreen() {
                 setExpandedCourse={setExpandedCourse}
                 recordClass={recordClass}
                 isTablet={isTablet}
+                onOpenDetails={(course) => {
+                  setSelectedAttendanceCourse(course);
+                  setExpandedCourse(null);
+                  setScreen('attendanceDetail');
+                }}
               />
+            ) : null}
+            {isAttendanceDetail && selectedAttendanceCourse ? (
+              <AttendanceDetailsScreen course={selectedAttendanceCourse} colors={colors} />
             ) : null}
             {screen === 'notices' ? <NoticesScreen colors={colors} /> : null}
             {screen === 'registration' ? <RegistrationScreen colors={colors} isTablet={isTablet} /> : null}
@@ -441,7 +516,7 @@ export default function StudentDiaryScreen() {
             {screen === 'fees' ? <FeesScreen colors={colors} /> : null}
             {screen === 'schedule' ? <ScheduleScreen colors={colors} activeDay={activeDay} setActiveDay={setActiveDay} dayMenuOpen={dayMenuOpen} setDayMenuOpen={setDayMenuOpen} /> : null}
             {screen === 'password' ? <PasswordScreen colors={colors} currentPassword={currentPassword} setCurrentPassword={setCurrentPassword} newPassword={newPassword} setNewPassword={setNewPassword} confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword} message={passwordMessage} setMessage={setPasswordMessage} /> : null}
-            {screen !== 'home' && !['information', 'fees', 'schedule', 'password'].includes(screen) ? <Text style={[styles.disclaimer, { color: colors.mutedForeground }]}>Sample diary · not connected to university systems</Text> : null}
+            {screen !== 'home' && !['information', 'fees', 'schedule', 'password', 'attendanceDetail'].includes(screen) ? <Text style={[styles.disclaimer, { color: colors.mutedForeground }]}>Sample diary · not connected to university systems</Text> : null}
           </ScrollView>
           {screen === 'fees' ? (
             <View style={[styles.feesFooter, { backgroundColor: colors.background, bottom: -20 }]}>
@@ -489,14 +564,14 @@ export default function StudentDiaryScreen() {
           </View>
         </Modal>
       ) : null}
-      {screen === 'home' || screen === 'attendance' || screen === 'registration' || isReferenceScreen ? (
+      {screen === 'home' || screen === 'attendance' || screen === 'registration' || isReferenceScreen || isAttendanceDetail ? (
         <View
           style={[
             styles.homeBottomInset,
             {
               height: Platform.OS === 'web' ? 34 : insets.bottom,
               bottom: Platform.OS === 'web' ? 0 : -insets.bottom,
-              backgroundColor: screen === 'home' ? colors.card : colors.background,
+              backgroundColor: screen === 'home' || isAttendanceDetail ? colors.card : colors.background,
             },
           ]}
         />
@@ -578,6 +653,7 @@ function AttendanceScreen({
   setExpandedCourse,
   recordClass,
   isTablet,
+  onOpenDetails,
 }: {
   colors: ReturnType<typeof useColors>;
   courses: Course[];
@@ -585,6 +661,7 @@ function AttendanceScreen({
   setExpandedCourse: (id: string | null) => void;
   recordClass: (courseId: string, present: boolean) => void;
   isTablet: boolean;
+  onOpenDetails: (course: Course) => void;
 }) {
   return (
     <View>
@@ -605,12 +682,17 @@ function AttendanceScreen({
                 accessibilityRole="button"
                 accessibilityState={{ expanded }}
                 testID={`course-${course.id}`}
-                style={styles.courseCardPress}
+                style={[styles.courseCardHeader, { backgroundColor: colors.primary }]}
               >
-                <View style={[styles.courseCardHeader, { backgroundColor: colors.primary }]}>
-                  <Text numberOfLines={2} style={styles.courseHeaderTitle}>{course.code}--{course.title}</Text>
-                </View>
-                <View style={styles.courseCardBody}>
+                <Text numberOfLines={2} style={styles.courseHeaderTitle}>{course.code}--{course.title}</Text>
+              </Pressable>
+              <View style={styles.courseCardBody}>
+                <Pressable
+                  onPress={() => setExpandedCourse(expanded ? null : course.id)}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded }}
+                  style={styles.courseCardBodyMain}
+                >
                   <View style={styles.courseRingWrap}>
                     <ProgressRing
                       percentage={percentage}
@@ -626,14 +708,25 @@ function AttendanceScreen({
                     <StatRow label="Present" value={String(course.present)} colors={colors} />
                     <StatRow label="Absent" value={String(course.total - course.present)} colors={colors} />
                   </View>
-                  <View style={[styles.attendanceArrow, { borderColor: colors.mutedForeground }]}>
-                    <MaterialCommunityIcons name={expanded ? 'chevron-up' : 'chevron-right'} size={18} color={colors.mutedForeground} />
-                  </View>
-                </View>
-                <View style={[styles.facultyRow, { borderTopColor: colors.border }]}>
+                </Pressable>
+                <Pressable
+                  onPress={() => onOpenDetails(course)}
+                  accessibilityLabel={`View attendance details for ${course.title}`}
+                  accessibilityRole="button"
+                  testID={`course-details-${course.id}`}
+                  style={[styles.attendanceArrow, { borderColor: colors.mutedForeground }]}
+                >
+                  <MaterialCommunityIcons name="chevron-right" size={18} color={colors.mutedForeground} />
+                </Pressable>
+              </View>
+              <Pressable
+                onPress={() => setExpandedCourse(expanded ? null : course.id)}
+                accessibilityRole="button"
+                accessibilityState={{ expanded }}
+                style={[styles.facultyRow, { borderTopColor: colors.border }]}
+              >
                   <Text style={[styles.facultyLabel, { color: colors.foreground }]}>Faculty Name</Text>
                   <Text numberOfLines={1} style={[styles.facultyName, { color: colors.mutedForeground }]}>{course.faculty}</Text>
-                </View>
               </Pressable>
               {expanded ? (
                 <View style={[styles.recordActions, { borderTopColor: colors.border }]}>
@@ -664,6 +757,42 @@ function AttendanceScreen({
           );
         })}
       </View>
+    </View>
+  );
+}
+
+function AttendanceDetailsScreen({ course, colors }: { course: Course; colors: ReturnType<typeof useColors> }) {
+  const records = getAttendanceRecords(course);
+
+  return (
+    <View style={styles.attendanceDetailsScreen}>
+      <View style={styles.attendanceDetailsIntro}>
+        <Text style={[styles.attendanceDetailsStudent, { color: colors.foreground }]}>PRINCE RAJ</Text>
+        <Text style={[styles.attendanceDetailsDepartment, { color: colors.foreground }]}>Computer Science and Engineering-V</Text>
+        <Text style={[styles.attendanceDetailsSubject, { color: colors.foreground }]}>{course.code}--{course.title}</Text>
+      </View>
+
+      <View style={[styles.attendanceDetailsTableHeader, { borderColor: colors.border }]}>
+        <Text style={[styles.attendanceDetailsCellText, styles.attendanceDetailsSerialCell, { color: colors.mutedForeground }]}>Sr.No.</Text>
+        <Text style={[styles.attendanceDetailsCellText, styles.attendanceDetailsDateCell, { color: colors.mutedForeground }]}>Date</Text>
+        <Text style={[styles.attendanceDetailsCellText, styles.attendanceDetailsPeriodCell, { color: colors.mutedForeground }]}>Period</Text>
+        <Text style={[styles.attendanceDetailsCellText, styles.attendanceDetailsStatusCell, { color: colors.mutedForeground }]}>Status</Text>
+      </View>
+
+      {records.map((record) => {
+        const statusColor = record.present ? colors.success : colors.destructive;
+        return (
+          <View key={`${course.id}-record-${record.serialNumber}`} style={[styles.attendanceDetailsRow, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.attendanceDetailsCellText, styles.attendanceDetailsSerialCell, { color: colors.mutedForeground }]}>{record.serialNumber}</Text>
+            <Text style={[styles.attendanceDetailsCellText, styles.attendanceDetailsDateCell, { color: colors.mutedForeground }]}>{record.date}</Text>
+            <Text style={[styles.attendanceDetailsCellText, styles.attendanceDetailsPeriodCell, { color: colors.mutedForeground }]}>{record.period}</Text>
+            <View style={styles.attendanceDetailsStatusCell}>
+              <Text style={[styles.attendanceDetailsCellText, { color: colors.mutedForeground }]}>{record.present ? 'Present' : 'Absent'}</Text>
+              <MaterialCommunityIcons name={record.present ? 'check' : 'close'} size={18} color={statusColor} />
+            </View>
+          </View>
+        );
+      })}
     </View>
   );
 }
@@ -993,6 +1122,8 @@ const styles = StyleSheet.create({
   header: { minHeight: 68, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, gap: 12 },
   attendanceHeader: { height: 60, minHeight: 60, paddingHorizontal: 20, gap: 22 },
   referenceHeader: { height: 60, minHeight: 60, paddingHorizontal: 20, gap: 21 },
+  attendanceDetailHeaderWeb: { height: 62, minHeight: 62, paddingHorizontal: 20, gap: 21 },
+  attendanceDetailHeaderNative: { height: 38, minHeight: 38, paddingHorizontal: 20, gap: 21 },
   headerIconButton: { width: 38, height: 42, alignItems: 'flex-start', justifyContent: 'center' },
   headerTitleWrap: { flex: 1, justifyContent: 'center' },
   headerTitle: { fontSize: 20, fontWeight: '700', letterSpacing: 0.1 },
@@ -1008,6 +1139,7 @@ const styles = StyleSheet.create({
   scrollArea: { flex: 1 },
   pageContent: { width: '100%', alignSelf: 'center', paddingTop: 22, paddingBottom: 24 },
   attendancePageContent: { paddingTop: 12, paddingHorizontal: 12 },
+  attendanceDetailPageContent: { paddingTop: 10, paddingHorizontal: 0, paddingBottom: 24 },
   edgeToEdgePageContent: { paddingTop: 0, paddingHorizontal: 0 },
   feesPageContent: { paddingTop: 18, paddingBottom: 96, paddingHorizontal: 22 },
   passwordPageContent: { flexGrow: 1, paddingTop: 16, paddingHorizontal: 5, paddingBottom: 4 },
@@ -1101,6 +1233,18 @@ const styles = StyleSheet.create({
   attendanceStudentHeading: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14, marginHorizontal: -8 },
   attendanceStudentName: { fontSize: 16, fontWeight: '800', letterSpacing: 0.1 },
   attendanceStudentProgram: { fontSize: 16, marginTop: 3 },
+  attendanceDetailsScreen: { width: '100%' },
+  attendanceDetailsIntro: { paddingHorizontal: 5, marginBottom: 9 },
+  attendanceDetailsStudent: { fontSize: 17, lineHeight: 22, fontWeight: '700' },
+  attendanceDetailsDepartment: { fontSize: 16, lineHeight: 21, marginTop: 2 },
+  attendanceDetailsSubject: { fontSize: 16, lineHeight: 21, marginTop: 3 },
+  attendanceDetailsTableHeader: { minHeight: 38, flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderBottomWidth: 1 },
+  attendanceDetailsRow: { minHeight: 38, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1 },
+  attendanceDetailsCellText: { fontSize: 16, lineHeight: 20, textAlign: 'center' },
+  attendanceDetailsSerialCell: { width: '18%' },
+  attendanceDetailsDateCell: { width: '30%' },
+  attendanceDetailsPeriodCell: { width: '22%' },
+  attendanceDetailsStatusCell: { width: '30%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
   attendanceSummary: { borderWidth: 1, borderRadius: 17, padding: 15, flexDirection: 'row', alignItems: 'center', gap: 15 },
   summaryDetails: { flex: 1 },
   summaryTitle: { fontSize: 14, fontWeight: '700' },
@@ -1119,6 +1263,7 @@ const styles = StyleSheet.create({
   courseCardHeader: { minHeight: 36, paddingVertical: 7, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center' },
   courseHeaderTitle: { color: '#ffffff', textAlign: 'center', fontSize: 16, lineHeight: 20, fontWeight: '500' },
   courseCardBody: { minHeight: 122, flexDirection: 'row', alignItems: 'center', paddingLeft: 17, paddingRight: 14, paddingVertical: 5 },
+  courseCardBodyMain: { flex: 1, flexDirection: 'row', alignItems: 'center' },
   courseRingWrap: { width: 112, height: 112, alignItems: 'center', justifyContent: 'center', position: 'relative' },
   courseCodeUnderRing: { position: 'absolute', bottom: 3, zIndex: 2, backgroundColor: '#ffffff', paddingHorizontal: 3, borderRadius: 2, fontSize: 15, lineHeight: 18 },
   courseStats: { flex: 1, maxWidth: 180, marginLeft: 22, gap: 12 },
