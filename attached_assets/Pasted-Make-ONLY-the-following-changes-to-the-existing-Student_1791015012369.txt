@@ -1,0 +1,45 @@
+Make ONLY the following changes to the existing Student Diary app. Do not change, redesign, remove, or modify anything else. Keep the current UI, colors, layout, navigation, fonts, icons, spacing, and all existing functionality exactly as they are.
+
+1. ATTENDANCE PERCENTAGES
+There are 8 subjects. Set their attendance percentages so that:
+- Computer Networks = 20%
+- Graph Theory = 58% (comparatively higher than the other subjects, but below 60%)
+- Software Project Management (Professional Elective-II) = 40%
+- Subject 4 = 52%
+- Subject 5 = 50%
+- Subject 6 = 48%
+- Subject 7 = 47%
+- Subject 8 = 53%
+
+The exact average of all 8 subjects must be 46%.
+
+2. COMPUTER NETWORKS
+Change ONLY the attendance percentage shown in the Computer Networks card to exactly 20%.
+
+3. SOFTWARE PROJECT MANAGEMENT
+For "BTE25558--Professional Elective - II - Software Project Management", set the Faculty Name to exactly:
+"Shuvadip Mandal"
+
+4. ATTENDANCE DETAILS SCREEN
+When the user clicks the existing arrow/details icon on ANY attendance subject card, open the attendance-details screen using the SAME interface/style as the attached reference screenshot.
+
+The details screen must contain:
+- Student name: PRINCE RAJ
+- Department: Computer Science and Engineering-V
+- Subject code and subject name
+- Sr.No.
+- Date
+- Period
+- Status
+- Present status with the same green check ✓
+- Absent status with the same red cross ✕
+- Proper scrolling list of attendance records.
+
+The Present/Absent records must mathematically match the percentage shown on the corresponding subject card. Do not show inconsistent percentages or attendance counts.
+
+5. IMPORTANT
+Every subject card's existing arrow/details icon must work. Clicking it should open the corresponding subject's own attendance-details screen with that subject's correct data.
+
+Do NOT change the overall app design or any other screens. Do NOT modify the navigation drawer, headers, cards, icons, or existing functionality except for the exact attendance data, faculty name, and attendance-details behavior requested above.
+
+Use the screenshots attached to this request only as visual reference for the attendance-details interface.
