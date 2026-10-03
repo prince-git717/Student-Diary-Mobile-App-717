@@ -1,1 +1,2 @@
 - [Expo preview settling](expo-preview-settling.md) — a blank first frame after restart may resolve once Metro finishes bundling.
+- [Attendance division mapping](attendance-division-mapping.md) — the Mamatha Velayapelli Computer Networks card represents Division 1.

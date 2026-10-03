@@ -45,7 +45,7 @@ type Course = {
 };
 
 const STORAGE_KEY = 'student-diary-attendance-v1';
-const DEMO_ATTENDANCE_STORAGE_KEY = 'student-diary-attendance-demo-v6';
+const DEMO_ATTENDANCE_STORAGE_KEY = 'student-diary-attendance-demo-v7';
 const ATTENDANCE_TARGET = 60;
 
 const initialCourses: Course[] = [
@@ -61,14 +61,14 @@ const initialCourses: Course[] = [
 
 const initialAttendanceCourses: Course[] = [
   { id: 'networks-mamatha', code: 'BTE26138', title: 'Computer Networks', faculty: 'Mamatha Velayapelli', present: 4, total: 20 },
-  { id: 'networks-sayak', code: 'BTE26138', title: 'Computer Networks', faculty: 'Sayak Mandal', present: 4, total: 20 },
+  { id: 'networks-sayak', code: 'BTE26138', title: 'Computer Networks', faculty: 'Sayak Mandal', present: 11, total: 25 },
   { id: 'web-programming', code: 'BTE25464', title: 'Web Programming', faculty: 'Kanak Lata', present: 26, total: 50 },
-  { id: 'graph-theory', code: 'BTE26148', title: 'Professional Elective-I - Graph Theory', faculty: 'Dilip Kumar', present: 29, total: 50 },
+  { id: 'graph-theory', code: 'BTE26148', title: 'Professional Elective-I - Graph Theory', faculty: 'Dilip Kumar', present: 27, total: 50 },
   { id: 'networks-lab', code: 'BTE26151', title: 'Computer Networks Laboratory', faculty: 'Megha Srivastava', present: 10, total: 20 },
   { id: 'knowledge', code: 'BTE25122', title: 'Essence of Indian Knowledge Tradition', faculty: 'Monika Singh', present: 12, total: 25 },
   { id: 'signals', code: 'BTE25112', title: 'Signals and Systems', faculty: 'Prem Nath Suman', present: 47, total: 100 },
   { id: 'signals-lab', code: 'BTE25466', title: 'Signal & System Laboratory', faculty: 'Mihir Kumar Mahakud', present: 53, total: 100 },
-  { id: 'software-project', code: 'BTE25558', title: 'Professional Elective - II - Software Project Management', faculty: 'Shuvadip Mandal', present: 20, total: 50 },
+  { id: 'software-project', code: 'BTE25558', title: 'Professional Elective - II - Software Project Management', faculty: 'Shuvadip Mandal', present: 22, total: 50 },
 ];
 
 const sampleAttendanceHistory = [
