@@ -1,0 +1,97 @@
+ONLY modify these 4 screens according to the screenshots I provided. DO NOT change anything else in the app.
+
+IMPORTANT:
+- Do not redesign the app.
+- Do not change colors, fonts, navigation, functionality, routes, data structure, or any other screen.
+- Keep every other screen EXACTLY as it is currently.
+- Only make the specific changes mentioned below.
+- Match the screenshots as closely as possible in spacing, sizing, alignment, typography, borders, icons, and layout.
+
+SCREEN 1 — SIDE NAVIGATION / DRAWER:
+1. Make the side navigation drawer match the provided screenshot EXACTLY.
+2. The drawer background must be PURE WHITE.
+3. Remove the blue/dark background that currently appears behind/around the drawer.
+4. Show the student's profile photo at the top exactly like the screenshot.
+5. Keep the profile photo circular with the same approximate size, border and positioning as the screenshot.
+6. Show "PRINCE RAJ" below the profile photo.
+7. Keep the power/logout icon at the top-right of the drawer exactly like the screenshot.
+8. Keep these menu items and their order exactly:
+   - Home
+   - Attendance
+   - Notice
+   - Exam Registration Status
+   - Result
+   - My Information
+   - Fees Paid
+   - Class Schedule
+   - Change Password
+9. Use the same icon style/positioning shown in the screenshot.
+10. Do NOT change the menu names or add/remove any menu item.
+11. The rest of the app behind the drawer must remain unchanged.
+
+SCREEN 2 — ATTENDANCE:
+Make the Attendance screen UI match the provided screenshots EXACTLY.
+
+1. Keep the existing Attendance functionality.
+2. At the top keep:
+   PRINCE RAJ
+   Computer Science and Engineering - V
+3. Each subject must be displayed in the same card structure as shown in the screenshots.
+4. The dark navy subject header must match the screenshot.
+5. Inside every attendance card:
+   - Circular percentage progress indicator on the LEFT.
+   - Percentage in the center of the circle.
+   - Subject code must appear BELOW/OVERLAPPING the bottom portion of the circle exactly like the screenshot.
+   - Total on the right.
+   - Present on the right.
+   - Absent on the right.
+   - Circular arrow icon on the far right.
+6. The subject code below the circle MUST be positioned like the screenshots. It should partially overlap/appear at the bottom of the circle.
+7. The progress ring must START FROM THE SAME POSITION/DIRECTION as shown in the screenshot. Do not use a different starting angle.
+8. Keep the Faculty Name section at the bottom of every card exactly like the screenshot.
+9. Match the card width, height, spacing, border, shadow, typography and alignment as closely as possible.
+10. Do NOT change the subject names, faculty names, subject codes, Total/Present/Absent structure or existing attendance functionality unless required only for the percentage values described below.
+
+ATTENDANCE PERCENTAGES:
+1. The FIRST "Computer Networks" attendance card at the top MUST show exactly 30%.
+2. DO NOT include this first Computer Networks 30% card when calculating the overall average.
+3. Calculate the average percentage using ALL THE OTHER attendance subject cards.
+4. The average of all those remaining subject percentages must be EXACTLY 48%.
+5. Do NOT make every subject 48%. Use different realistic percentages such as 41%, 42%, 50%, 47%, 49%, 45%, 55%, etc., as appropriate.
+6. IMPORTANT: Calculate the actual arithmetic average yourself based on the exact number of remaining subjects in the app so that the final average is EXACTLY 48%.
+7. Keep Total/Present/Absent values internally consistent with the displayed percentage wherever the current app structure supports this.
+8. Do not modify the first Computer Networks card's 30% when calculating the remaining average.
+
+SCREEN 3 — CLASS SCHEDULE:
+Make Class Schedule match the provided screenshot EXACTLY.
+
+1. Keep the same top navigation/header.
+2. Show the day selector exactly like the screenshot, with:
+   Friday
+   and the dropdown arrow on the right.
+3. Each class must use the same white card design shown in the screenshot.
+4. Each card must have the dark navy top strip.
+5. Keep the stopwatch/timer icon at the top-right of each card.
+6. Show:
+   Subject Name
+   Faculty Name
+   with the same alignment, spacing and typography as the screenshot.
+7. Keep the subject names and faculty names as currently intended by the app.
+8. Match the screenshot's card width, margins, spacing, font sizes and colors.
+9. Do NOT redesign the Class Schedule screen.
+
+SCREEN 4 — THE OTHER PROVIDED SCREEN:
+Apply ONLY the visual/layout differences shown in the provided screenshot to this screen.
+Do not change its functionality or any unrelated component.
+Match the screenshot exactly while preserving the existing app behavior.
+
+GLOBAL RESTRICTION:
+ONLY modify these 4 screens.
+DO NOT modify any other screen or component.
+DO NOT make any additional improvements.
+DO NOT add new features.
+DO NOT change existing navigation.
+DO NOT change the overall app theme.
+DO NOT change anything that I did not explicitly request.
+
+Before finishing, verify all 4 screens against the provided screenshots and make sure the UI is as close to the screenshots as possible.
