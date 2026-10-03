@@ -220,7 +220,7 @@ export default function StudentDiaryScreen() {
   const isWide = width >= 820;
   const isTablet = width >= 620;
 
-  const [screen, setScreen] = useState<ScreenKey>('attendance');
+  const [screen, setScreen] = useState<ScreenKey>('home');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [courses, setCourses] = useState<Course[]>(initialCourses);
   const [attendanceCourses, setAttendanceCourses] = useState<Course[]>(initialAttendanceCourses);
