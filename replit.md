@@ -5,7 +5,8 @@ An Expo student companion for viewing attendance, notices, schedules, and academ
 ## Run & Operate
 
 - Run the managed workflow `artifacts/student-diary: expo` for the mobile app and browser preview. Replit supplies its port and Expo preview domain.
-- Dependencies must be installed with `pnpm install` from the repository root before starting the imported project.
+- Use Node.js 24 (configured in `.replit`).
+- Dependencies must be installed with `pnpm install --frozen-lockfile` from the repository root before starting the imported project.
 - `pnpm --filter @workspace/student-diary run typecheck` — check the mobile app.
 - From `artifacts/student-diary`, run `CI=1 pnpm exec expo install --check` and `pnpm dlx expo-doctor@latest` to check Expo compatibility.
 - Student Diary currently stores attendance locally with AsyncStorage; its preview does not require the API server or a database.
