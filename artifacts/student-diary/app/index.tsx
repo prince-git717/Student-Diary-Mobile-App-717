@@ -45,8 +45,11 @@ type Course = {
 };
 
 const STORAGE_KEY = 'student-diary-attendance-v1';
-const DEMO_ATTENDANCE_STORAGE_KEY = 'student-diary-attendance-demo-v8';
-const LEGACY_DEMO_ATTENDANCE_STORAGE_KEY = 'student-diary-attendance-demo-v7';
+const DEMO_ATTENDANCE_STORAGE_KEY = 'student-diary-attendance-demo-v9';
+const LEGACY_DEMO_ATTENDANCE_STORAGE_KEYS = [
+  'student-diary-attendance-demo-v8',
+  'student-diary-attendance-demo-v7',
+] as const;
 const ATTENDANCE_TARGET = 60;
 
 const initialCourses: Course[] = [
@@ -63,13 +66,13 @@ const initialCourses: Course[] = [
 const initialAttendanceCourses: Course[] = [
   { id: 'networks-mamatha', code: 'BTE26138', title: 'Computer Networks', faculty: 'Mamatha Velayapelli', present: 4, total: 20 },
   { id: 'networks-sayak', code: 'BTE26138', title: 'Computer Networks', faculty: 'Sayak Mandal', present: 11, total: 25 },
-  { id: 'web-programming', code: 'BTE25464', title: 'Web Programming', faculty: 'Kanak Lata', present: 9, total: 20 },
-  { id: 'graph-theory', code: 'BTE26148', title: 'Professional Elective-I - Graph Theory', faculty: 'Dilip Kumar', present: 25, total: 50 },
-  { id: 'networks-lab', code: 'BTE26151', title: 'Computer Networks Laboratory', faculty: 'Megha Srivastava', present: 27, total: 50 },
-  { id: 'knowledge', code: 'BTE25122', title: 'Essence of Indian Knowledge Tradition', faculty: 'Monika Singh', present: 21, total: 50 },
-  { id: 'signals', code: 'BTE25112', title: 'Signals and Systems', faculty: 'Prem Nath Suman', present: 40, total: 100 },
-  { id: 'signals-lab', code: 'BTE25466', title: 'Signal & System Laboratory', faculty: 'Mihir Kumar Mahakud', present: 53, total: 100 },
-  { id: 'software-project', code: 'BTE25558', title: 'Professional Elective - II - Software Project Management', faculty: 'Shuvadip Mandal', present: 22, total: 50 },
+  { id: 'web-programming', code: 'BTE25464', title: 'Web Programming', faculty: 'Kanak Lata', present: 23, total: 52 },
+  { id: 'graph-theory', code: 'BTE26148', title: 'Professional Elective-I - Graph Theory', faculty: 'Dilip Kumar', present: 29, total: 58 },
+  { id: 'networks-lab', code: 'BTE26151', title: 'Computer Networks Laboratory', faculty: 'Megha Srivastava', present: 15, total: 28 },
+  { id: 'knowledge', code: 'BTE25122', title: 'Essence of Indian Knowledge Tradition', faculty: 'Monika Singh', present: 9, total: 22 },
+  { id: 'signals', code: 'BTE25112', title: 'Signals and Systems', faculty: 'Prem Nath Suman', present: 18, total: 46 },
+  { id: 'signals-lab', code: 'BTE25466', title: 'Signal & System Laboratory', faculty: 'Mihir Kumar Mahakud', present: 12, total: 22 },
+  { id: 'software-project', code: 'BTE25558', title: 'Professional Elective - II - Software Project Management', faculty: 'Shuvadip Mandal', present: 26, total: 59 },
 ];
 
 const sampleAttendanceHistory = [
@@ -348,7 +351,13 @@ export default function StudentDiaryScreen() {
     AsyncStorage.getItem(DEMO_ATTENDANCE_STORAGE_KEY)
       .then(async (stored) => {
         if (!active) return;
-        const legacyStored = stored ? null : await AsyncStorage.getItem(LEGACY_DEMO_ATTENDANCE_STORAGE_KEY);
+        let legacyStored: string | null = null;
+        if (!stored) {
+          for (const legacyKey of LEGACY_DEMO_ATTENDANCE_STORAGE_KEYS) {
+            legacyStored = await AsyncStorage.getItem(legacyKey);
+            if (legacyStored) break;
+          }
+        }
         if (!active) return;
         const attendanceStored = stored ?? legacyStored;
         if (attendanceStored) {
@@ -357,7 +366,15 @@ export default function StudentDiaryScreen() {
             course && typeof course.id === 'string' && Number.isFinite(course.present) &&
             Number.isFinite(course.total) && course.present >= 0 && course.total >= course.present
           )) {
-            const coursesToMigrate = new Set(['web-programming', 'graph-theory', 'networks-lab', 'knowledge', 'signals']);
+            const coursesToMigrate = new Set([
+              'web-programming',
+              'graph-theory',
+              'networks-lab',
+              'knowledge',
+              'signals',
+              'signals-lab',
+              'software-project',
+            ]);
             const savedCourses = parsed as Course[];
             setAttendanceCourses(stored ? savedCourses : savedCourses.map((course) => {
               if (!coursesToMigrate.has(course.id)) return course;
