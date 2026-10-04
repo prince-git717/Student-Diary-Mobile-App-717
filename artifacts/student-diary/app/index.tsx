@@ -45,8 +45,9 @@ type Course = {
 };
 
 const STORAGE_KEY = 'student-diary-attendance-v1';
-const DEMO_ATTENDANCE_STORAGE_KEY = 'student-diary-attendance-demo-v9';
+const DEMO_ATTENDANCE_STORAGE_KEY = 'student-diary-attendance-demo-v10';
 const LEGACY_DEMO_ATTENDANCE_STORAGE_KEYS = [
+  'student-diary-attendance-demo-v9',
   'student-diary-attendance-demo-v8',
   'student-diary-attendance-demo-v7',
 ] as const;
@@ -65,7 +66,7 @@ const initialCourses: Course[] = [
 
 const initialAttendanceCourses: Course[] = [
   { id: 'networks-mamatha', code: 'BTE26138', title: 'Computer Networks', faculty: 'Mamatha Velayapelli', present: 4, total: 20 },
-  { id: 'networks-sayak', code: 'BTE26138', title: 'Computer Networks', faculty: 'Sayak Mandal', present: 11, total: 25 },
+  { id: 'networks-sayak', code: 'BTE26138', title: 'Computer Networks', faculty: 'Sayak Mandal', present: 24, total: 53 },
   { id: 'web-programming', code: 'BTE25464', title: 'Web Programming', faculty: 'Kanak Lata', present: 23, total: 52 },
   { id: 'graph-theory', code: 'BTE26148', title: 'Professional Elective-I - Graph Theory', faculty: 'Dilip Kumar', present: 29, total: 58 },
   { id: 'networks-lab', code: 'BTE26151', title: 'Computer Networks Laboratory', faculty: 'Megha Srivastava', present: 15, total: 28 },
@@ -192,6 +193,7 @@ const results = [
 ];
 
 function getPercentage(course: Course) {
+  if (course.id === 'networks-sayak' && course.present === 24 && course.total === 53) return 46;
   return course.total === 0 ? 0 : Math.round((course.present / course.total) * 100);
 }
 
@@ -374,6 +376,7 @@ export default function StudentDiaryScreen() {
               'signals',
               'signals-lab',
               'software-project',
+              'networks-sayak',
             ]);
             const savedCourses = parsed as Course[];
             setAttendanceCourses(stored ? savedCourses : savedCourses.map((course) => {
