@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import * as Haptics from 'expo-haptics';
 import React, { useEffect, useState, type ComponentProps } from 'react';
 import {
   ActivityIndicator,
@@ -301,7 +300,6 @@ export default function StudentDiaryScreen() {
   const [courses, setCourses] = useState<Course[]>(initialCourses);
   const [attendanceCourses, setAttendanceCourses] = useState<Course[]>(initialAttendanceCourses);
   const [selectedAttendanceCourse, setSelectedAttendanceCourse] = useState<Course | null>(null);
-  const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
   const [activeDay, setActiveDay] = useState('Fri');
   const [dayMenuOpen, setDayMenuOpen] = useState(false);
   const [informationTab, setInformationTab] = useState<StudentInformationTab>('PERSONAL DETAIL');
@@ -420,19 +418,6 @@ export default function StudentDiaryScreen() {
     if (key === 'information') setInformationReturnScreen(screen === 'attendanceDetail' ? 'attendance' : screen);
     setScreen(key);
     setDrawerOpen(false);
-    setExpandedCourse(null);
-  };
-
-  const recordClass = (courseId: string, present: boolean) => {
-    void Haptics.selectionAsync();
-    setAttendanceCourses((current) =>
-      current.map((course) =>
-        course.id === courseId
-          ? { ...course, total: course.total + 1, present: course.present + (present ? 1 : 0) }
-          : course,
-      ),
-    );
-    setExpandedCourse(null);
   };
 
   if (!ready || !attendanceReady) {
@@ -521,13 +506,9 @@ export default function StudentDiaryScreen() {
               <AttendanceScreen
                 colors={colors}
                 courses={attendanceCourses}
-                expandedCourse={expandedCourse}
-                setExpandedCourse={setExpandedCourse}
-                recordClass={recordClass}
                 isTablet={isTablet}
                 onOpenDetails={(course) => {
                   setSelectedAttendanceCourse(course);
-                  setExpandedCourse(null);
                   setScreen('attendanceDetail');
                 }}
               />
@@ -674,17 +655,11 @@ function HomeScreen({ colors }: { colors: ReturnType<typeof useColors> }) {
 function AttendanceScreen({
   colors,
   courses,
-  expandedCourse,
-  setExpandedCourse,
-  recordClass,
   isTablet,
   onOpenDetails,
 }: {
   colors: ReturnType<typeof useColors>;
   courses: Course[];
-  expandedCourse: string | null;
-  setExpandedCourse: (id: string | null) => void;
-  recordClass: (courseId: string, present: boolean) => void;
   isTablet: boolean;
   onOpenDetails: (course: Course) => void;
 }) {
@@ -699,25 +674,13 @@ function AttendanceScreen({
       <View style={[styles.courseList, isTablet && styles.courseListWide]}>
         {courses.map((course) => {
           const percentage = getPercentage(course);
-          const expanded = expandedCourse === course.id;
           return (
             <View key={course.id} style={[styles.courseCard, isTablet && styles.courseCardWide, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Pressable
-                onPress={() => setExpandedCourse(expanded ? null : course.id)}
-                accessibilityRole="button"
-                accessibilityState={{ expanded }}
-                testID={`course-${course.id}`}
-                style={[styles.courseCardHeader, { backgroundColor: colors.primary }]}
-              >
+              <View style={[styles.courseCardHeader, { backgroundColor: colors.primary }]}>
                 <Text numberOfLines={2} style={styles.courseHeaderTitle}>{course.code}--{course.title}</Text>
-              </Pressable>
+              </View>
               <View style={styles.courseCardBody}>
-                <Pressable
-                  onPress={() => setExpandedCourse(expanded ? null : course.id)}
-                  accessibilityRole="button"
-                  accessibilityState={{ expanded }}
-                  style={styles.courseCardBodyMain}
-                >
+                <View style={styles.courseCardBodyMain}>
                   <View style={styles.courseRingWrap}>
                     <ProgressRing
                       percentage={percentage}
@@ -733,7 +696,7 @@ function AttendanceScreen({
                     <StatRow label="Present" value={String(course.present)} colors={colors} />
                     <StatRow label="Absent" value={String(course.total - course.present)} colors={colors} />
                   </View>
-                </Pressable>
+                </View>
                 <Pressable
                   onPress={() => onOpenDetails(course)}
                   accessibilityLabel={`View attendance details for ${course.title}`}
@@ -744,40 +707,10 @@ function AttendanceScreen({
                   <MaterialCommunityIcons name="chevron-right" size={18} color={colors.mutedForeground} />
                 </Pressable>
               </View>
-              <Pressable
-                onPress={() => setExpandedCourse(expanded ? null : course.id)}
-                accessibilityRole="button"
-                accessibilityState={{ expanded }}
-                style={[styles.facultyRow, { borderTopColor: colors.border }]}
-              >
-                  <Text style={[styles.facultyLabel, { color: colors.foreground }]}>Faculty Name</Text>
-                  <Text numberOfLines={1} style={[styles.facultyName, { color: colors.mutedForeground }]}>{course.faculty}</Text>
-              </Pressable>
-              {expanded ? (
-                <View style={[styles.recordActions, { borderTopColor: colors.border }]}>
-                  <Text style={[styles.recordPrompt, { color: colors.mutedForeground }]}>Record one class</Text>
-                  <View style={styles.recordButtons}>
-                    <Pressable
-                      onPress={() => recordClass(course.id, true)}
-                      accessibilityRole="button"
-                      testID={`record-present-${course.id}`}
-                      style={({ pressed }) => [styles.recordButton, { backgroundColor: colors.successSoft, opacity: pressed ? 0.7 : 1 }]}
-                    >
-                      <MaterialCommunityIcons name="check" size={17} color={colors.success} />
-                      <Text style={[styles.recordButtonText, { color: colors.success }]}>Present</Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => recordClass(course.id, false)}
-                      accessibilityRole="button"
-                      testID={`record-absent-${course.id}`}
-                      style={({ pressed }) => [styles.recordButton, { backgroundColor: colors.dangerSoft, opacity: pressed ? 0.7 : 1 }]}
-                    >
-                      <MaterialCommunityIcons name="close" size={17} color={colors.destructive} />
-                      <Text style={[styles.recordButtonText, { color: colors.destructive }]}>Absent</Text>
-                    </Pressable>
-                  </View>
-                </View>
-              ) : null}
+              <View style={[styles.facultyRow, { borderTopColor: colors.border }]}>
+                <Text style={[styles.facultyLabel, { color: colors.foreground }]}>Faculty Name</Text>
+                <Text numberOfLines={1} style={[styles.facultyName, { color: colors.mutedForeground }]}>{course.faculty}</Text>
+              </View>
             </View>
           );
         })}
@@ -1361,11 +1294,6 @@ const styles = StyleSheet.create({
   facultyRow: { borderTopWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 20, minHeight: 38, paddingHorizontal: 5 },
   facultyLabel: { fontSize: 18 },
   facultyName: { fontSize: 18, flex: 1 },
-  recordActions: { borderTopWidth: 1, padding: 12 },
-  recordPrompt: { fontSize: 11, marginBottom: 9 },
-  recordButtons: { flexDirection: 'row', gap: 8 },
-  recordButton: { flex: 1, borderRadius: 10, minHeight: 38, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 5 },
-  recordButtonText: { fontSize: 12, fontWeight: '700' },
   noticeList: { gap: 11 },
   noticeCard: { borderWidth: 1, borderRadius: 16, padding: 14 },
   noticeCardTop: { flexDirection: 'row', alignItems: 'center', gap: 11 },
