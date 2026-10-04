@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "2e635156-b503-4420-84f8-d1af190e4ae1"
+      }
+    },
+    "android": {
+      "package": "com.princeexpo717.workspace"
+    }
+  }
+}
