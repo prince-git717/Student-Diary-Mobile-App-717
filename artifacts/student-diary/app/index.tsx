@@ -45,7 +45,8 @@ type Course = {
 };
 
 const STORAGE_KEY = 'student-diary-attendance-v1';
-const DEMO_ATTENDANCE_STORAGE_KEY = 'student-diary-attendance-demo-v7';
+const DEMO_ATTENDANCE_STORAGE_KEY = 'student-diary-attendance-demo-v8';
+const LEGACY_DEMO_ATTENDANCE_STORAGE_KEY = 'student-diary-attendance-demo-v7';
 const ATTENDANCE_TARGET = 60;
 
 const initialCourses: Course[] = [
@@ -62,11 +63,11 @@ const initialCourses: Course[] = [
 const initialAttendanceCourses: Course[] = [
   { id: 'networks-mamatha', code: 'BTE26138', title: 'Computer Networks', faculty: 'Mamatha Velayapelli', present: 4, total: 20 },
   { id: 'networks-sayak', code: 'BTE26138', title: 'Computer Networks', faculty: 'Sayak Mandal', present: 11, total: 25 },
-  { id: 'web-programming', code: 'BTE25464', title: 'Web Programming', faculty: 'Kanak Lata', present: 26, total: 50 },
-  { id: 'graph-theory', code: 'BTE26148', title: 'Professional Elective-I - Graph Theory', faculty: 'Dilip Kumar', present: 27, total: 50 },
-  { id: 'networks-lab', code: 'BTE26151', title: 'Computer Networks Laboratory', faculty: 'Megha Srivastava', present: 10, total: 20 },
-  { id: 'knowledge', code: 'BTE25122', title: 'Essence of Indian Knowledge Tradition', faculty: 'Monika Singh', present: 12, total: 25 },
-  { id: 'signals', code: 'BTE25112', title: 'Signals and Systems', faculty: 'Prem Nath Suman', present: 47, total: 100 },
+  { id: 'web-programming', code: 'BTE25464', title: 'Web Programming', faculty: 'Kanak Lata', present: 9, total: 20 },
+  { id: 'graph-theory', code: 'BTE26148', title: 'Professional Elective-I - Graph Theory', faculty: 'Dilip Kumar', present: 25, total: 50 },
+  { id: 'networks-lab', code: 'BTE26151', title: 'Computer Networks Laboratory', faculty: 'Megha Srivastava', present: 27, total: 50 },
+  { id: 'knowledge', code: 'BTE25122', title: 'Essence of Indian Knowledge Tradition', faculty: 'Monika Singh', present: 21, total: 50 },
+  { id: 'signals', code: 'BTE25112', title: 'Signals and Systems', faculty: 'Prem Nath Suman', present: 40, total: 100 },
   { id: 'signals-lab', code: 'BTE25466', title: 'Signal & System Laboratory', faculty: 'Mihir Kumar Mahakud', present: 53, total: 100 },
   { id: 'software-project', code: 'BTE25558', title: 'Professional Elective - II - Software Project Management', faculty: 'Shuvadip Mandal', present: 22, total: 50 },
 ];
@@ -345,15 +346,24 @@ export default function StudentDiaryScreen() {
   useEffect(() => {
     let active = true;
     AsyncStorage.getItem(DEMO_ATTENDANCE_STORAGE_KEY)
-      .then((stored) => {
+      .then(async (stored) => {
         if (!active) return;
-        if (stored) {
-          const parsed: unknown = JSON.parse(stored);
+        const legacyStored = stored ? null : await AsyncStorage.getItem(LEGACY_DEMO_ATTENDANCE_STORAGE_KEY);
+        if (!active) return;
+        const attendanceStored = stored ?? legacyStored;
+        if (attendanceStored) {
+          const parsed: unknown = JSON.parse(attendanceStored);
           if (Array.isArray(parsed) && parsed.every((course) =>
             course && typeof course.id === 'string' && Number.isFinite(course.present) &&
             Number.isFinite(course.total) && course.present >= 0 && course.total >= course.present
           )) {
-            setAttendanceCourses(parsed as Course[]);
+            const coursesToMigrate = new Set(['web-programming', 'graph-theory', 'networks-lab', 'knowledge', 'signals']);
+            const savedCourses = parsed as Course[];
+            setAttendanceCourses(stored ? savedCourses : savedCourses.map((course) => {
+              if (!coursesToMigrate.has(course.id)) return course;
+              const updated = initialAttendanceCourses.find((initial) => initial.id === course.id);
+              return updated ? { ...course, present: updated.present, total: updated.total } : course;
+            }));
           }
         }
       })

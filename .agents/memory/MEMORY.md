@@ -1,2 +1,3 @@
 - [Expo preview settling](expo-preview-settling.md) — a blank first frame after restart may resolve once Metro finishes bundling.
+- [Expo prebuild dependencies](expo-prebuild-dependencies.md) — prebuild may promote core app packages to runtime dependencies; inspect and limit lockfile changes.
 - [Attendance division mapping](attendance-division-mapping.md) — the Mamatha Velayapelli Computer Networks card represents Division 1.
