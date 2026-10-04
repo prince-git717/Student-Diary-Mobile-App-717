@@ -154,12 +154,6 @@ const drawerLabels: Record<ScreenKey, string> = {
   password: 'Change Password',
 };
 
-const notices = [
-  { date: 'OCT 06', tag: 'ACADEMIC', title: 'Mid-semester examination timetable', body: 'The draft timetable for semester V is available. Review your subjects and check the notice board for room updates.' },
-  { date: 'OCT 03', tag: 'CAMPUS', title: 'Library hours this week', body: 'The central library will remain open until 8:00 PM from Monday to Friday.' },
-  { date: 'SEP 29', tag: 'ACADEMIC', title: 'Project review submissions', body: 'Please submit your project review documents to your faculty mentor before the next scheduled review.' },
-];
-
 const scheduleByDay: Record<string, Array<{ time: string; code: string; title: string; room: string; faculty: string }>> = {
   Mon: [
     { time: '09:00 AM', code: 'BTE26138', title: 'Computer Networks', room: 'Block B · 204', faculty: 'M. Velayapelli' },
@@ -422,15 +416,15 @@ export default function StudentDiaryScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: screen === 'home' || screen === 'attendance' || screen === 'registration' || isReferenceScreen || isAttendanceDetail ? colors.primary : colors.background }]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: screen === 'home' || screen === 'attendance' || screen === 'registration' || screen === 'results' || isReferenceScreen || isAttendanceDetail ? colors.primary : colors.background }]} edges={['top', 'bottom']}>
       <StatusBar style="light" />
       <View
         style={[
           styles.appShell,
-          { maxWidth: isWide ? 1180 : 760, paddingTop: Platform.OS === 'web' ? (isAttendanceDetail ? 0 : isReferenceScreen || screen === 'attendance' ? 55 : 67) : 0, paddingBottom: Platform.OS === 'web' ? 34 : 0, backgroundColor: screen === 'home' || screen === 'attendance' || screen === 'registration' || isReferenceScreen || isAttendanceDetail ? colors.primary : 'transparent' },
+          { maxWidth: isWide ? 1180 : 760, paddingTop: Platform.OS === 'web' ? (isAttendanceDetail ? 0 : isReferenceScreen || screen === 'attendance' ? 55 : 67) : 0, paddingBottom: Platform.OS === 'web' ? 34 : 0, backgroundColor: screen === 'home' || screen === 'attendance' || screen === 'registration' || screen === 'results' || isReferenceScreen || isAttendanceDetail ? colors.primary : 'transparent' },
         ]}
       >
-        <View style={[styles.header, screen === 'home' && styles.homeHeader, screen === 'attendance' && styles.attendanceHeader, screen === 'registration' && styles.registrationHeader, ['information', 'fees', 'schedule', 'password'].includes(screen) && styles.referenceHeader, isAttendanceDetail && (Platform.OS === 'web' ? styles.attendanceDetailHeaderWeb : styles.attendanceDetailHeaderNative), { backgroundColor: colors.primary }]}>
+        <View style={[styles.header, screen === 'home' && styles.homeHeader, screen === 'attendance' && styles.attendanceHeader, screen === 'registration' && styles.registrationHeader, screen === 'results' && styles.resultsHeader, ['information', 'fees', 'schedule', 'password'].includes(screen) && styles.referenceHeader, isAttendanceDetail && (Platform.OS === 'web' ? styles.attendanceDetailHeaderWeb : styles.attendanceDetailHeaderNative), { backgroundColor: colors.primary }]}>
           <Pressable
             onPress={() => screen === 'registration' ? navigate('home') : screen === 'information' ? navigate(informationReturnScreen) : isAttendanceDetail ? navigate('attendance') : setDrawerOpen(true)}
             accessibilityLabel={screen === 'registration' || screen === 'information' || isAttendanceDetail ? 'Go back' : 'Open navigation menu'}
@@ -441,10 +435,10 @@ export default function StudentDiaryScreen() {
             <MaterialCommunityIcons name={screen === 'registration' || screen === 'information' || isAttendanceDetail ? 'arrow-left' : 'menu'} size={25} color={colors.primaryForeground} />
           </Pressable>
           <View style={styles.headerTitleWrap}>
-            <Text numberOfLines={1} style={[styles.headerTitle, screen === 'home' && styles.homeHeaderTitle, screen === 'registration' && styles.registrationHeaderTitle, ['information', 'fees', 'schedule', 'password'].includes(screen) && styles.referenceHeaderTitle, isAttendanceDetail && styles.referenceHeaderTitle, { color: colors.primaryForeground }]}>{screen === 'home' ? 'Student Diary' : screen === 'registration' ? 'Show Exam Register Status' : pageTitle}</Text>
-            {screen !== 'home' && screen !== 'attendance' && screen !== 'registration' && !['information', 'fees', 'schedule', 'password', 'attendanceDetail'].includes(screen) ? <Text numberOfLines={1} style={styles.headerSubtitle}>ARKA JAIN University · Jharkhand</Text> : null}
+            <Text numberOfLines={1} style={[styles.headerTitle, screen === 'home' && styles.homeHeaderTitle, screen === 'registration' && styles.registrationHeaderTitle, (screen === 'results' || ['information', 'fees', 'schedule', 'password'].includes(screen)) && styles.referenceHeaderTitle, isAttendanceDetail && styles.referenceHeaderTitle, { color: colors.primaryForeground }]}>{screen === 'home' ? 'Student Diary' : screen === 'registration' ? 'Show Exam Register Status' : pageTitle}</Text>
+            {screen !== 'home' && screen !== 'attendance' && screen !== 'registration' && !['information', 'fees', 'schedule', 'password', 'attendanceDetail', 'results'].includes(screen) ? <Text numberOfLines={1} style={styles.headerSubtitle}>ARKA JAIN University · Jharkhand</Text> : null}
           </View>
-          {screen !== 'home' && screen !== 'attendance' && screen !== 'registration' && !['information', 'fees', 'schedule', 'password', 'attendanceDetail'].includes(screen) ? (
+          {screen !== 'home' && screen !== 'attendance' && screen !== 'registration' && !['information', 'fees', 'schedule', 'password', 'attendanceDetail', 'results'].includes(screen) ? (
             <Pressable onPress={() => navigate('information')} accessibilityLabel="Open student profile" accessibilityRole="button" style={styles.headerAvatar}>
               <Text style={[styles.headerAvatarText, { color: colors.primary }]}>PR</Text>
             </Pressable>
@@ -472,6 +466,7 @@ export default function StudentDiaryScreen() {
               styles.scrollArea,
               screen === 'home' && { backgroundColor: colors.card },
               screen === 'attendance' && { backgroundColor: colors.background },
+              screen === 'results' && { backgroundColor: colors.card },
               (screen === 'registration' || isReferenceScreen) && { backgroundColor: colors.background },
               isAttendanceDetail && { backgroundColor: colors.card },
             ]}
@@ -482,6 +477,7 @@ export default function StudentDiaryScreen() {
               isAttendanceDetail && styles.attendanceDetailPageContent,
               screen === 'home' && styles.homePageContent,
               screen === 'registration' && styles.registrationPageContent,
+              screen === 'results' && styles.resultsPageContent,
               ['information', 'schedule'].includes(screen) && styles.edgeToEdgePageContent,
               screen === 'fees' && styles.feesPageContent,
               screen === 'password' && styles.passwordPageContent,
@@ -509,14 +505,13 @@ export default function StudentDiaryScreen() {
             {isAttendanceDetail && selectedAttendanceCourse ? (
               <AttendanceDetailsScreen course={selectedAttendanceCourse} colors={colors} />
             ) : null}
-            {screen === 'notices' ? <NoticesScreen colors={colors} /> : null}
             {screen === 'registration' ? <RegistrationScreen colors={colors} isTablet={isTablet} /> : null}
             {screen === 'results' ? <ResultsScreen colors={colors} /> : null}
             {screen === 'information' ? <InformationScreen colors={colors} activeTab={informationTab} setActiveTab={setInformationTab} /> : null}
             {screen === 'fees' ? <FeesScreen colors={colors} /> : null}
             {screen === 'schedule' ? <ScheduleScreen colors={colors} activeDay={activeDay} setActiveDay={setActiveDay} dayMenuOpen={dayMenuOpen} setDayMenuOpen={setDayMenuOpen} /> : null}
             {screen === 'password' ? <PasswordScreen colors={colors} currentPassword={currentPassword} setCurrentPassword={setCurrentPassword} newPassword={newPassword} setNewPassword={setNewPassword} confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword} message={passwordMessage} setMessage={setPasswordMessage} /> : null}
-            {screen !== 'home' && !['information', 'fees', 'schedule', 'password', 'attendanceDetail'].includes(screen) ? <Text style={[styles.disclaimer, { color: colors.mutedForeground }]}>Sample diary · not connected to university systems</Text> : null}
+            {screen !== 'home' && !['information', 'fees', 'schedule', 'password', 'attendanceDetail', 'attendance', 'notices', 'results'].includes(screen) ? <Text style={[styles.disclaimer, { color: colors.mutedForeground }]}>Sample diary · not connected to university systems</Text> : null}
           </ScrollView>
           {screen === 'fees' ? (
             <View style={[styles.feesFooter, { backgroundColor: colors.background, bottom: -20 }]}>
@@ -564,14 +559,14 @@ export default function StudentDiaryScreen() {
           </View>
         </Modal>
       ) : null}
-      {screen === 'home' || screen === 'attendance' || screen === 'registration' || isReferenceScreen || isAttendanceDetail ? (
+      {screen === 'home' || screen === 'attendance' || screen === 'registration' || screen === 'results' || isReferenceScreen || isAttendanceDetail ? (
         <View
           style={[
             styles.homeBottomInset,
             {
               height: Platform.OS === 'web' ? 34 : insets.bottom,
               bottom: Platform.OS === 'web' ? 0 : -insets.bottom,
-              backgroundColor: screen === 'home' || isAttendanceDetail ? colors.card : colors.background,
+              backgroundColor: screen === 'home' || screen === 'results' || isAttendanceDetail ? colors.card : colors.background,
             },
           ]}
         />
@@ -806,35 +801,6 @@ function StatRow({ label, value, colors, valueColor }: { label: string; value: s
   );
 }
 
-function NoticesScreen({ colors }: { colors: ReturnType<typeof useColors> }) {
-  return (
-    <View>
-      <View style={styles.pageIntro}>
-        <Text style={[styles.pageHeading, { color: colors.foreground }]}>Notices</Text>
-        <Text style={[styles.pageSubheading, { color: colors.mutedForeground }]}>Updates for your campus and classes</Text>
-      </View>
-      <View style={styles.noticeList}>
-        {notices.map((notice) => (
-          <View key={notice.title} style={[styles.noticeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={styles.noticeCardTop}>
-              <View style={[styles.noticeDateBox, { backgroundColor: colors.secondary }]}>
-                <Text style={[styles.noticeDateText, { color: colors.primary }]}>{notice.date.split(' ')[1]}</Text>
-                <Text style={[styles.noticeMonthText, { color: colors.mutedForeground }]}>{notice.date.split(' ')[0]}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.noticeTag, { color: colors.primary }]}>{notice.tag}</Text>
-                <Text style={[styles.noticeCardTitle, { color: colors.foreground }]}>{notice.title}</Text>
-              </View>
-              <MaterialCommunityIcons name="chevron-right" size={19} color={colors.mutedForeground} />
-            </View>
-            <Text style={[styles.noticeBody, { color: colors.mutedForeground }]}>{notice.body}</Text>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-}
-
 function RegistrationScreen({ colors, isTablet }: { colors: ReturnType<typeof useColors>; isTablet: boolean }) {
   const subjects = [
     'BTE26138-Computer Networks',
@@ -903,40 +869,129 @@ function RegistrationScreen({ colors, isTablet }: { colors: ReturnType<typeof us
 }
 
 function ResultsScreen({ colors }: { colors: ReturnType<typeof useColors> }) {
+  const sessions = ['ODD 2024-25', 'EVEN 2024-25', 'ODD 2023-24', 'EVEN 2023-24'];
+  const semesters = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
+  const [session, setSession] = useState(sessions[0]);
+  const [semester, setSemester] = useState(semesters[0]);
+  const [openPicker, setOpenPicker] = useState<'session' | 'semester' | null>(null);
+  const [showResults, setShowResults] = useState(false);
+  const pickerOptions = openPicker === 'session' ? sessions : semesters;
+  const pickerValue = openPicker === 'session' ? session : semester;
+
   return (
     <View>
-      <View style={styles.pageIntro}>
-        <Text style={[styles.pageHeading, { color: colors.foreground }]}>Results</Text>
-        <Text style={[styles.pageSubheading, { color: colors.mutedForeground }]}>Your academic record at a glance</Text>
-      </View>
-      <View style={[styles.gpaCard, { backgroundColor: colors.primary }]}>
-        <View>
-          <Text style={styles.gpaKicker}>PREVIOUS SEMESTER</Text>
-          <Text style={styles.gpaValue}>8.1<Text style={styles.gpaScale}> / 10</Text></Text>
-          <Text style={styles.gpaCaption}>Semester IV · SGPA</Text>
+      <View style={styles.resultFilters}>
+        <View style={styles.resultFilterRow}>
+          <Text style={[styles.resultFilterLabel, { color: colors.foreground }]}>Session</Text>
+          <Pressable
+            onPress={() => setOpenPicker('session')}
+            accessibilityLabel={`Session, ${session}`}
+            accessibilityRole="button"
+            testID="result-session-picker"
+            style={[styles.resultDropdown, { backgroundColor: colors.card }]}
+          >
+            <Text numberOfLines={1} style={[styles.resultDropdownText, styles.resultSessionValue, { color: colors.foreground }]}>{session}</Text>
+            <MaterialCommunityIcons name="chevron-down" size={20} color={colors.mutedForeground} />
+          </Pressable>
         </View>
-        <View style={[styles.gpaIcon, { backgroundColor: 'rgba(255,255,255,0.14)' }]}>
-          <MaterialCommunityIcons name="school-outline" size={29} color={colors.accent} />
+        <View style={styles.resultFilterRow}>
+          <Text style={[styles.resultFilterLabel, { color: colors.foreground }]}>Semester</Text>
+          <Pressable
+            onPress={() => setOpenPicker('semester')}
+            accessibilityLabel={`Semester, ${semester}`}
+            accessibilityRole="button"
+            testID="result-semester-picker"
+            style={[styles.resultDropdown, styles.resultSemesterDropdown, { backgroundColor: colors.card }]}
+          >
+            <Text style={[styles.resultDropdownText, { color: colors.foreground }]}>{semester}</Text>
+            <MaterialCommunityIcons name="chevron-down" size={20} color={colors.mutedForeground} />
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              setOpenPicker(null);
+              setShowResults(true);
+            }}
+            accessibilityLabel={`Show results for ${session}, semester ${semester}`}
+            accessibilityRole="button"
+            testID="show-results"
+            style={({ pressed }) => [styles.resultShowButton, { opacity: pressed ? 0.78 : 1 }]}
+          >
+            <Text style={styles.resultShowButtonText}>Show</Text>
+          </Pressable>
         </View>
       </View>
-      <View style={styles.resultSection}>
-        <SectionTitle title="Semester IV grades" colors={colors} />
-        {results.map((result, index) => (
-          <View key={result.code} style={[styles.resultRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={[styles.resultIndex, { backgroundColor: colors.secondary }]}>
-              <Text style={[styles.resultIndexText, { color: colors.primary }]}>{String(index + 1).padStart(2, '0')}</Text>
+      {showResults && semester === 'IV' ? (
+        <>
+          <View style={[styles.gpaCard, { backgroundColor: colors.primary }]}>
+            <View>
+              <Text style={styles.gpaKicker}>PREVIOUS SEMESTER</Text>
+              <Text style={styles.gpaValue}>8.1<Text style={styles.gpaScale}> / 10</Text></Text>
+              <Text style={styles.gpaCaption}>Semester IV · SGPA</Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.resultSubject, { color: colors.foreground }]}>{result.subject}</Text>
-              <Text style={[styles.resultCode, { color: colors.mutedForeground }]}>{result.code} · {result.points} grade points</Text>
-            </View>
-            <View style={[styles.gradeBadge, { backgroundColor: colors.successSoft }]}>
-              <Text style={[styles.gradeText, { color: colors.success }]}>{result.grade}</Text>
+            <View style={[styles.gpaIcon, { backgroundColor: 'rgba(255,255,255,0.14)' }]}>
+              <MaterialCommunityIcons name="school-outline" size={29} color={colors.accent} />
             </View>
           </View>
-        ))}
-      </View>
-      <DemoDataCallout colors={colors} text="Grades shown here are sample entries, not official university results." />
+          <View style={styles.resultSection}>
+            <SectionTitle title="Semester IV grades" colors={colors} />
+            {results.map((result, index) => (
+              <View key={result.code} style={[styles.resultRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={[styles.resultIndex, { backgroundColor: colors.secondary }]}>
+                  <Text style={[styles.resultIndexText, { color: colors.primary }]}>{String(index + 1).padStart(2, '0')}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.resultSubject, { color: colors.foreground }]}>{result.subject}</Text>
+                  <Text style={[styles.resultCode, { color: colors.mutedForeground }]}>{result.code} · {result.points} grade points</Text>
+                </View>
+                <View style={[styles.gradeBadge, { backgroundColor: colors.successSoft }]}>
+                  <Text style={[styles.gradeText, { color: colors.success }]}>{result.grade}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+          <DemoDataCallout colors={colors} text="Grades shown here are sample entries, not official university results." />
+        </>
+      ) : showResults ? (
+        <Text style={[styles.resultEmptyMessage, { color: colors.mutedForeground }]}>No sample results are available for Semester {semester}.</Text>
+      ) : null}
+      <Modal
+        visible={openPicker !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOpenPicker(null)}
+      >
+        <View style={styles.resultPickerOverlay}>
+          <Pressable
+            style={styles.resultPickerBackdrop}
+            onPress={() => setOpenPicker(null)}
+            accessibilityLabel="Close result options"
+          />
+          <View style={[styles.resultPickerCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.resultPickerTitle, { color: colors.foreground }]}>
+              {openPicker === 'session' ? 'Select Session' : 'Select Semester'}
+            </Text>
+            <ScrollView style={styles.resultPickerOptions} showsVerticalScrollIndicator={false}>
+              {pickerOptions.map((option) => (
+                <Pressable
+                  key={option}
+                  onPress={() => {
+                    if (openPicker === 'session') setSession(option);
+                    else setSemester(option);
+                    setShowResults(false);
+                    setOpenPicker(null);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: option === pickerValue }}
+                  style={[styles.resultPickerOption, { borderBottomColor: colors.border }]}
+                >
+                  <Text style={[styles.resultPickerOptionText, { color: colors.foreground }]}>{option}</Text>
+                  {option === pickerValue ? <MaterialCommunityIcons name="check" size={19} color={colors.primary} /> : null}
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1122,6 +1177,7 @@ const styles = StyleSheet.create({
   header: { minHeight: 68, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, gap: 12 },
   attendanceHeader: { height: 60, minHeight: 60, paddingHorizontal: 20, gap: 22 },
   referenceHeader: { height: 60, minHeight: 60, paddingHorizontal: 20, gap: 21 },
+  resultsHeader: { height: 84, minHeight: 84, paddingHorizontal: 20, gap: 21 },
   attendanceDetailHeaderWeb: { height: 62, minHeight: 62, paddingHorizontal: 20, gap: 21 },
   attendanceDetailHeaderNative: { height: 38, minHeight: 38, paddingHorizontal: 20, gap: 21 },
   headerIconButton: { width: 38, height: 42, alignItems: 'flex-start', justifyContent: 'center' },
@@ -1140,6 +1196,7 @@ const styles = StyleSheet.create({
   pageContent: { width: '100%', alignSelf: 'center', paddingTop: 22, paddingBottom: 24 },
   attendancePageContent: { paddingTop: 12, paddingHorizontal: 12 },
   attendanceDetailPageContent: { paddingTop: 10, paddingHorizontal: 0, paddingBottom: 24 },
+  resultsPageContent: { paddingTop: Platform.OS === 'web' ? 27 : 62, paddingHorizontal: 8, paddingBottom: 24 },
   edgeToEdgePageContent: { paddingTop: 0, paddingHorizontal: 0 },
   feesPageContent: { paddingTop: 18, paddingBottom: 96, paddingHorizontal: 22 },
   passwordPageContent: { flexGrow: 1, paddingTop: 16, paddingHorizontal: 5, paddingBottom: 4 },
@@ -1303,6 +1360,23 @@ const styles = StyleSheet.create({
   gpaCaption: { color: 'rgba(255,255,255,0.72)', fontSize: 11, marginTop: 1 },
   gpaIcon: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   resultSection: { marginTop: 22 },
+  resultFilters: { width: '100%' },
+  resultFilterRow: { width: '100%', minHeight: 39, flexDirection: 'row', alignItems: 'center', marginBottom: 11 },
+  resultFilterLabel: { width: 94, fontSize: 16, lineHeight: 20 },
+  resultDropdown: { flex: 1, height: 39, borderWidth: 1, borderColor: '#c5c5c5', borderRadius: 0, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  resultSemesterDropdown: { marginRight: 5 },
+  resultDropdownText: { fontSize: 16, lineHeight: 20, fontWeight: '600' },
+  resultSessionValue: { fontWeight: '700' },
+  resultShowButton: { width: 127, height: 37, backgroundColor: '#4d89b6', alignItems: 'center', justifyContent: 'center', borderRadius: 0, elevation: 2, shadowColor: '#000000', shadowOpacity: 0.18, shadowRadius: 2, shadowOffset: { width: 0, height: 1 } },
+  resultShowButtonText: { color: '#ffffff', fontSize: 16, fontWeight: '400' },
+  resultPickerOverlay: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  resultPickerBackdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.35)' },
+  resultPickerCard: { width: '100%', maxWidth: 360, maxHeight: '80%', borderWidth: 1, borderRadius: 3, paddingHorizontal: 16, paddingTop: 15, paddingBottom: 5, elevation: 8, shadowColor: '#000000', shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 3 } },
+  resultPickerTitle: { fontSize: 17, fontWeight: '600', marginBottom: 6 },
+  resultPickerOptions: { flexGrow: 0 },
+  resultPickerOption: { minHeight: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth },
+  resultPickerOptionText: { fontSize: 16 },
+  resultEmptyMessage: { textAlign: 'center', fontSize: 14, lineHeight: 20, marginTop: 32 },
   resultRow: { borderWidth: 1, borderRadius: 13, padding: 10, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 10 },
   resultIndex: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   resultIndexText: { fontSize: 10, fontWeight: '700' },
