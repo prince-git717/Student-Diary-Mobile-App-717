@@ -7,6 +7,11 @@
     "icon": "./assets/images/icon.png",
     "scheme": "student-diary",
     "userInterfaceStyle": "light",
+    "extra": {
+      "eas": {
+        "projectId": "2e635156-b503-4420-84f8-d1af190e4ae1"
+      }
+    },
     "ios": {
       "supportsTablet": true
     },
