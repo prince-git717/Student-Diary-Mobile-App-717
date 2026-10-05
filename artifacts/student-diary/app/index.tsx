@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState, type ComponentProps } from 'react';
 import {
   ActivityIndicator,
+  BackHandler,
   Image,
   Modal,
   Platform,
@@ -295,7 +296,29 @@ export default function StudentDiaryScreen() {
   const isWide = width >= 820;
   const isTablet = width >= 620;
 
-  const [screen, setScreen] = useState<AppScreenKey>('home');
+  const [screenStack, setScreenStack] = useState<AppScreenKey[]>(['home']);
+  const screenStackRef = React.useRef(screenStack);
+  screenStackRef.current = screenStack;
+
+  const screen = screenStack[screenStack.length - 1] ?? 'home';
+
+  const goBack = React.useCallback(() => {
+    if (screenStackRef.current.length > 1) {
+      setScreenStack((prev) => (prev.length > 1 ? prev.slice(0, prev.length - 1) : prev));
+      return true;
+    }
+    return false;
+  }, []);
+
+  useEffect(() => {
+    const onBackPress = () => {
+      return goBack();
+    };
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => subscription.remove();
+  }, [goBack]);
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [courses, setCourses] = useState<Course[]>(initialCourses);
   const [attendanceCourses, setAttendanceCourses] = useState<Course[]>(initialAttendanceCourses);
@@ -414,10 +437,22 @@ export default function StudentDiaryScreen() {
             ? 'Change Password'
             : menuItems.find((item) => item.key === screen)?.label ?? 'Student Diary';
 
-  const navigate = (key: ScreenKey) => {
+  const navigate = (key: AppScreenKey) => {
     if (key === 'information') setInformationReturnScreen(screen === 'attendanceDetail' ? 'attendance' : screen);
-    setScreen(key);
     setDrawerOpen(false);
+    if (key === screen) return;
+
+    if (key === 'home') {
+      setScreenStack(['home']);
+    } else if (key === 'attendanceDetail') {
+      setScreenStack((prev) => {
+        const hasAttendance = prev.includes('attendance');
+        const baseStack: AppScreenKey[] = hasAttendance ? prev.filter((s) => s !== 'attendanceDetail') : ['home', 'attendance'];
+        return [...baseStack, 'attendanceDetail'];
+      });
+    } else {
+      setScreenStack(['home', key]);
+    }
   };
 
   if (!ready || !attendanceReady) {
@@ -441,7 +476,7 @@ export default function StudentDiaryScreen() {
       >
         <View style={[styles.header, screen === 'home' && styles.homeHeader, screen === 'attendance' && styles.attendanceHeader, screen === 'registration' && styles.registrationHeader, screen === 'results' && styles.resultsHeader, ['information', 'fees', 'schedule', 'password'].includes(screen) && styles.referenceHeader, isAttendanceDetail && (Platform.OS === 'web' ? styles.attendanceDetailHeaderWeb : styles.attendanceDetailHeaderNative), { backgroundColor: colors.primary }]}>
           <Pressable
-            onPress={() => screen === 'registration' ? navigate('home') : screen === 'information' ? navigate(informationReturnScreen) : isAttendanceDetail ? navigate('attendance') : setDrawerOpen(true)}
+            onPress={() => (screen === 'registration' || screen === 'information' || isAttendanceDetail ? goBack() : setDrawerOpen(true))}
             accessibilityLabel={screen === 'registration' || screen === 'information' || isAttendanceDetail ? 'Go back' : 'Open navigation menu'}
             accessibilityRole="button"
             testID={screen === 'registration' ? 'back-from-registration' : screen === 'information' ? 'back-from-information' : isAttendanceDetail ? 'back-from-attendance-details' : 'open-menu'}
@@ -509,7 +544,7 @@ export default function StudentDiaryScreen() {
                 isTablet={isTablet}
                 onOpenDetails={(course) => {
                   setSelectedAttendanceCourse(course);
-                  setScreen('attendanceDetail');
+                  navigate('attendanceDetail');
                 }}
               />
             ) : null}
