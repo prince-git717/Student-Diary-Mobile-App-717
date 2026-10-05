@@ -312,7 +312,10 @@ export default function StudentDiaryScreen() {
 
   useEffect(() => {
     const onBackPress = () => {
-      return goBack();
+      if (screenStackRef.current.length > 1) {
+        goBack();
+      }
+      return true;
     };
 
     const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
